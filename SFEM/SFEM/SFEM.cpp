@@ -138,6 +138,7 @@ int main()
 			teste[i][j].assign(2, 0.);
 		}
 	}
+	//TESTE DE MUDANCA NO CODIGO
 	//Matrix3DDoub teste2(3,3,3);
 	//mat.assign(3, 3, 4, 0.);
 	//teste.Print();
