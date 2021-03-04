@@ -14,6 +14,8 @@
 #include "ludcmp.h"
 #include <math.h>
 #include <cmath>
+#include "mins_ndim.h"
+
 using namespace std;
 
 Doub beamproblem(Int nx, Int ny, Int order);
@@ -78,8 +80,190 @@ void ToMatInt(vector<vector<int>> in, MatInt & out)
 //];
 //vg
 //];
+//
+
+//VecDoub p = ...;
+//Func func;
+
+Doub func(VecDoub_I &x)
+{
+	return pow(x[0], 4) - 3 * pow(x[0], 2) - x[0];
+}
+
+Doub func2(VecDoub_I &x)
+{
+	return sin(tan(x[0]) / 2.);
+}
+
+Doub func2d(VecDoub_I &x)
+{
+	return  (x[0]*x[0] + x[1]*x[1] - 16)*(x[0] * x[0] + x[1] * x[1] - 16);
+}
+
+
+struct Funcd {
+	Doub operator() (VecDoub_I &x)
+	{
+		return (x[0] * x[0] + x[1] * x[1] - 16)*(x[0] * x[0] + x[1] * x[1] - 16);
+	}
+	void df(VecDoub_I &x, VecDoub_O &deriv) 
+	{
+		deriv[0] = 4 * x[0] * (-16 + pow(x[0], 2) + pow(x[1], 2));
+		deriv[1] = 4 * x[1] * (-16 + pow(x[0], 2) + pow(x[1], 2));
+	}
+};
+
+struct Funcd2 {
+	Doub operator() (VecDoub_I &x)
+	{
+		return (1 - x[0])*(1 - x[0]) + 100*pow((-pow(x[0],2) - x[1]),2);
+	}
+	void df(VecDoub_I &x, VecDoub_O &deriv)
+	{
+		deriv[0] = -2 * (1 - x[0]) - 400 * x[0]*(-pow(x[0], 2) - x[1]);
+		deriv[1] = -200*(-pow(x[0],2) - x[1]);
+	}
+};
+
+Doub func2d2(VecDoub_I &x)
+{
+	return (1 - x[0])*(1 - x[0]) + 100 * pow((-pow(x[0], 2) - x[1]), 2);
+}
+
+//Doub distfuncdp(VecDoub_I &x)
+//{
+//	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
+//
+//	Doub val = (8 * pow(a, 2)*G*pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xi, 2) +
+//		6 * K*pow(sqrt(3)*a*(2 * sig1 - sig2 - sig3) + 2 * b*(3 * apex - sqrt(3)*xi)*cos(beta), 2) +
+//		6 * K*pow(3 * a*(sig2 - sig3) + 2 * b*(3 * apex - sqrt(3)*xi)*sin(beta), 2)) / (216.*pow(a, 2)*G*K);
+//}
+
+Doub distfunddp(VecDoub_I &x){
+	//subst2 = { young -> 10 ^ 7, nu -> 0.48, G->young / (2 (1 + nu)),
+	//	K -> (young) / (3 (1 - 2 nu)), a -> (c / (Sqrt[3] Tan[phi]) - apex),
+	//	b->a tanphi, apex->c Cot[phi] , phi->Pi / 9., c -> 490.,
+	//	tanphi -> - (3 Tan[phi]) / Sqrt[9 + 12 Tan[phi] ^ 2] };
+	Doub young = 10e7;
+	Doub nu = 0.48;
+	Doub c = 490;
+	Doub phi = M_PI / 9.;
+	//{-505.176, -630.033, -2500.23}
+	//{1280.72, -1356.11, -2833.72}
+	//Doub sig1= -505.176, sig2= -630.033, sig3= -2500.23;
+	Doub sig1 = 1280.72, sig2 = -1356.11, sig3 = - 2833.72;
+	Doub tanphi = (3.*tan(phi)) / sqrt(9. + 12.* tan(phi) *tan(phi));
+	Doub apex= c * 1. / tan(phi);
+
+	Doub a = (c / (sqrt(3)*tan(phi)) - apex);
+	Doub b = a*tanphi;
+	Doub K = (young) / (3.* (1. - 2.* nu));
+	Doub G = young / (2.* (1. + nu));
+	Doub xiint = x[0];
+
+	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
+
+	if (xiint > apex)
+	{
+		xiint = apex;
+	}
+	Doub func = ((4 * pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xiint,2)) / K + (9 * pow(-2 * sig1 + sig2 + sig3 +
+	2 * sqrt((pow(b,2)*(-3 * pow(a,2) + 3 * pow(apex,2) - 2 * sqrt(3)*apex*xiint + pow(xiint,2))) / pow(a,2))*cos(beta),2)) / G +
+		(3 * pow(-3 * sig2 + 3 * sig3 + 2 * sqrt(3)*sqrt((pow(b,2)*(-3 * pow(a,2) + 3 * pow(apex,2) - 2 * sqrt(3)*apex*xiint + pow(xiint,2))) / pow(a,2))*sin(beta),2)) / G) / 108.;
+	return func;
+}
+
+
+struct Func {
+	Doub operator()(VecDoub_I &x);
+};
+
+Doub Func::operator()(VecDoub_I &x)
+{
+	//subst2 = { young -> 10 ^ 7, nu -> 0.48, G->young / (2 (1 + nu)),
+	//	K -> (young) / (3 (1 - 2 nu)), a -> (c / (Sqrt[3] Tan[phi]) - apex),
+	//	b->a tanphi, apex->c Cot[phi] , phi->Pi / 9., c -> 490.,
+	//	tanphi -> - (3 Tan[phi]) / Sqrt[9 + 12 Tan[phi] ^ 2] };
+	Doub young = 10e7;
+	Doub nu = 0.48;
+	Doub c = 490;
+	Doub phi = M_PI / 9.;
+	//{-505.176, -630.033, -2500.23}
+	//{1280.72, -1356.11, -2833.72}
+	//Doub sig1= -505.176, sig2= -630.033, sig3= -2500.23;
+	Doub sig1 = 1280.72, sig2 = -1356.11, sig3 = -2833.72;
+	Doub tanphi = (3.*tan(phi)) / sqrt(9. + 12.* tan(phi) *tan(phi));
+	Doub apex = c * 1. / tan(phi);
+
+	Doub a = (c / (sqrt(3)*tan(phi)) - apex);
+	Doub b = a*tanphi;
+	Doub K = (young) / (3.* (1. - 2.* nu));
+	Doub G = young / (2.* (1. + nu));
+	Doub xiint = x[0];
+
+	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
+
+	if (xiint > apex)
+	{
+		xiint = apex;
+	}
+	Doub func = ((4 * pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xiint, 2)) / K + (9 * pow(-2 * sig1 + sig2 + sig3 +
+		2 * sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xiint + pow(xiint, 2))) / pow(a, 2))*cos(beta), 2)) / G +
+		(3 * pow(-3 * sig2 + 3 * sig3 + 2 * sqrt(3)*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xiint + pow(xiint, 2))) / pow(a, 2))*sin(beta), 2)) / G) / 108.;
+	return func;
+}
+
+
 int main()
 {
+
+	Powell<Doub(VecDoub_I &)> powell(distfunddp, 0.0001);
+	VecDoub initialguess(1, -2.);
+	VecDoub p = powell.minimize(initialguess);
+	p.Print();
+
+
+	Func func;
+	Powell<Func> powell2(func);
+	p = powell2.minimize(initialguess);
+	p.Print();
+
+
+	Funcd2 funcd;
+	Frprmn<Funcd2> frprmn(funcd, 0.0001);
+	VecDoub pinit(2,1.);
+	pinit[0] = 3.5;
+	pinit[1] = 1.5;
+	VecDoub p0 = frprmn.minimize(pinit);
+	p0.Print();
+
+
+
+	//T &func, const Doub ftoll = 3.0e-8
+
+
+
+	//Powell<Func> powell(func);
+
+	//Powell<Doub(VecDoub_I &)> powell(func2, 0.0001);
+
+	///VecDoub initialguess(1, -2.);
+
+	//VecDoub p = powell.minimize(initialguess);
+
+	//p.Print();
+
+	//Powell<Doub(VecDoub_I &)> powell2(func2d2, 0.0001);
+
+	//VecDoub initialguess2d(2, 0.);
+	//initialguess2d[0] = 3.6;
+	//initialguess2d[1] = 1.6;
+
+	//VecDoub p2 = powell2.minimize(initialguess2d);
+
+	//p2.Print();
+
+
 
 	IterativeProcessPressure();
 
