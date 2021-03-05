@@ -6,9 +6,10 @@
 template <class YC>
 class elastoplastic2D : shapequad{
 public:
-	elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, Doub bodyforce, Int planestress, Int order);
-	elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, Doub bodyforce, Int planestress, Int order, MatDoub  HHAT);
+	elastoplastic2D( Doub thickness, MatDoub bodyforce, Int planestress, Int order);
+	elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, MatDoub bodyforce, Int planestress, Int order, MatDoub  HHAT);
 	elastoplastic2D(elastoplastic2D & copy);
+	elastoplastic2D();
 	~elastoplastic2D();
 
 //	elastmat2D(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order);
@@ -34,15 +35,13 @@ public:
 	void SetMemory(Int ngloblapoints, Int systemsize);
 	void UpdateDisplacement(MatDoub displace);
 	void UpdatePlasticStrain();
-	
+	void UpdateBodyForce(MatDoub newbodyforce);
 
 //
 //
 private:
-	Doub fyoung;
-	Doub fnu;
-	Doub fsigy;
-	Doub fbodyforce;
+
+	MatDoub fbodyforce;
 	Int fplanestress;
 	Doub fthickness;
 	Int fOrder;
