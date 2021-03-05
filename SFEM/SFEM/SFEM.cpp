@@ -37,6 +37,7 @@ void IterativeProcess();
 vector<vector<int>>  LineTopology(vector<int> ids, Int order);
 void ToMatInt(vector<vector<int>> in, MatInt & out);
 void IterativeProcessPressure();
+void IterativeSlopeStability();
 template <class T>
 vector<T> vecstr_to_vec(vector<string> vs);
 
@@ -233,7 +234,7 @@ int main()
 	dp->closestpointproj(epst, epsp, projstress, projstrain, Dep, projgamma);
 
 	std::cout << projgamma << std::endl;
-	Dep.Print();
+	//Dep.Print();
 
 
 	Powell<Doub(VecDoub_I &)> powell(distfunddp, 0.0001);
@@ -392,6 +393,169 @@ int main()
 	system("PAUSE");
 	return 0;
 }
+
+void IterativeSlopeStability()
+{
+	MatDoub  meshcoords, elcoords;
+	MatInt meshtopology;
+	vector<vector<vector<Doub>>> allcoords;
+	string  elsstr = "elements-pressure-fino.txt";
+	string nodestr = "nodes-pressure-fino.txt";
+	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
+
+	std::ofstream filemesh1("meshcoords.txt");
+	OutPutPost(meshcoords, filemesh1);
+
+	std::ofstream filemesh2("meshtopology.txt");
+
+	OutPutPost(meshtopology, filemesh2);
+
+	cout << " \n number of elements " << allcoords.size() << endl;
+
+	Doub young = 210., nu = 0.3, thickness = 1., bodyforce = 0., sigy = 0.24;
+	Int planestress = 0;
+
+
+	Int ndivs = 10000;
+	MatDoub path1, path2, path3;
+	vector<int>  idpath1, idpath2, iddisplace;
+	VecDoub a(2), b(2);
+	a[0] = 100.;a[1] = 0.;
+	b[0] = 200.;b[1] = 0;
+	gridmesh::Line(a, b, ndivs, path1);
+	gridmesh::FindIdsInPath(path1, allcoords, meshtopology, idpath1);
+
+	a[0] = 0.;a[1] = 100.;
+	b[0] = 0.;b[1] = 200.;
+	gridmesh::Line(a, b, ndivs, path2);
+	gridmesh::FindIdsInPath(path2, allcoords, meshtopology, idpath2);
+
+	a[0] = 200.;a[1] = 0.;
+	b[0] = 200.;b[1] = 0.01;
+	gridmesh::Line(a, b, ndivs, path3);
+	gridmesh::FindIdsInPath(path3, allcoords, meshtopology, iddisplace);
+
+	Int sz = 2 * meshcoords.nrows();
+	MatDoub KG(sz, sz, 0.), FG(sz, 1, 0.), ptsweigths;
+
+	int order = 2;
+	shapequad shape = shapequad(order, 1);
+	shape.pointsandweigths(ptsweigths);
+	Int npts = ptsweigths.nrows();
+	Int nglobalpts = meshtopology.nrows()* npts;
+
+	MatDoub displace;
+	displace.assign(sz, 1, 0.);
+
+	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(young, nu, sigy, thickness, bodyforce, planestress, order);
+	material->fYC.setup(young, nu, sigy);
+	material->SetMemory(nglobalpts, sz);
+
+	Doub finalload = 0.19209;
+	Doub fac[] = { 0.1 / finalload, 0.14 / finalload, 0.18 / finalload, 0.19 / finalload, 1. };
+
+
+
+	MatInt  linetopology;
+	vector<int> idpathcirc;
+	MatDoub pathcirc;
+	ndivs = 1000;
+	Doub delta;
+	pathcirc.assign(ndivs + 1, 2, 0.);
+	Int i = 0;
+	delta = (M_PI / 2.) / (Doub(ndivs));
+	for (Doub theta = 0;theta < M_PI / 2.; theta += delta) {
+		pathcirc[i][0] = 100. * cos(theta);
+		pathcirc[i][1] = 100. * sin(theta);
+		i++;
+	}
+
+	gridmesh::FindIdsInPath(pathcirc, allcoords, meshtopology, idpathcirc);
+	//for (int i = 0;i < idpathcirc.size();i++)std::cout << " ID  = " << idpathcirc[i] << endl;
+
+	vector<vector<int>>  linetopol = LineTopology(idpathcirc, 2);
+	ToMatInt(linetopol, linetopology);
+	//linetopology.Print();
+	material->ContributeCurvedLine(KG, FG, meshcoords, linetopology, finalload);
+
+	//FG.Print();
+
+	Int steps = 5;
+	Int counterout = 1;
+	MatDoub solpost(steps, 2, 0.);
+	for (Int iload = 0; iload < steps; iload++)
+	{
+		std::cout << "load step = " << iload << std::endl;
+		Int counter = 0, maxcount = 30;
+		Doub err1 = 10., err2 = 10., tol = 10.e-5;
+		MatDoub dw(sz, 1, 0.), res(sz, 1, 0.), FINT, R;
+		while (counter <  maxcount && err1 > tol)
+		{
+			MatDoub FGint = FG;
+			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+
+			//KG.Print();
+			//FINT.Print();
+
+			FGint *= fac[iload];
+			FGint -= FINT;
+			R = FGint;
+
+			//R.Print();
+
+			Int dir, val;
+			dir = 1;
+			val = 0;
+			material->DirichletBC(KG, R, idpath1, dir, val);
+			dir = 0;
+			val = 0;
+			material->DirichletBC(KG, R, idpath2, dir, val);
+
+			MatDoub invKG, sol;
+			Cholesky * chol = new Cholesky(KG);
+			chol->inverse(invKG);
+
+			//LUdcmp * LU = new LUdcmp(KG);
+			//LU->inverse(invKG);
+
+			invKG.Mult(R, dw);
+			//dw.Print();
+			displace += dw;
+			material->UpdateDisplacement(displace);
+			Doub rnorm = 0., normdw = 0., normfg = 0., unorm = 0.;
+			for (Int i = 0;i < R.nrows();i++)rnorm += R[i][0] * R[i][0];
+			for (Int i = 0;i < dw.nrows();i++)normdw += dw[i][0] * dw[i][0];
+			for (Int i = 0;i < FG.nrows();i++)normfg += FG[i][0] * fac[iload] * FG[i][0] * fac[iload];
+			for (Int i = 0;i < displace.nrows();i++)unorm += displace[i][0] * displace[i][0];
+			rnorm = sqrt(fabs(rnorm));
+			normdw = sqrt(fabs(normdw));
+			normfg = sqrt(fabs(normfg));
+			unorm = sqrt(fabs(unorm));
+			err1 = rnorm / normfg;
+			err2 = normdw / unorm;
+			std::cout << " Iteration number = " << counter << " |  |R|/|FE| = " << err1 << " | deltau/u " << err2 << std::endl;
+			counter++;
+		}
+		material->UpdatePlasticStrain();
+		counterout++;
+		solpost[iload][0] = fabs(displace[2 * iddisplace[0]][0]);
+		solpost[iload][1] = fabs(fac[iload] * finalload);
+
+	}
+
+	std::ofstream file8("loadvsdisplacementlu.txt");
+	OutPutFile(solpost, file8);
+	vector<vector<double>> solx, soly;
+	material->PostProcess(allcoords, meshtopology, displace, solx, soly);
+	std::ofstream file("soly.txt");
+	OutPutPost(soly, file);
+	//return sol[2 * idpath1[0] + 1][0];
+
+}
+
+
+
+
 
 void IterativeProcessPressure()
 {
