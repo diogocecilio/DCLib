@@ -3,7 +3,7 @@
 #include <math.h>
 #include <cmath>
 #include "elastoplasticbase.h"
-class druckerprager:elastoplasticbase
+class druckerprager
 {
 public:
 	druckerprager(Doub young, Doub nu, Doub coesion, Doub frictionangle);
@@ -45,11 +45,10 @@ public:
 	//		2 * sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2.))*cos(beta), 2.)) / fG +
 	//		(3 * pow(-3. * sig2 + 3. * sig3 + 2 * sqrt(3.)*sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2))*sin(beta), 2)) / fG) / 108.;
 	//}
-
+	 Doub fyoung;
+	 Doub fnu;
 
 private:
-	Doub fyoung;
-	Doub fnu;
 	Doub fcoesion;
 	Doub fphi;
 	Doub fK;
