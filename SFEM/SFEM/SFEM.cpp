@@ -10,6 +10,7 @@
 #include "elastmat2D.h"
 #include "KLGalerkinRF.h"
 #include "vonmises.h"
+#include "druckerprager.h"
 #include "elastoplastic2D.h"
 #include "ludcmp.h"
 #include <math.h>
@@ -216,6 +217,24 @@ Doub Func::operator()(VecDoub_I &x)
 
 int main()
 {
+
+
+	Doub young = 20000.;
+	Doub nu = 0.3;
+	Doub c = 50;
+	Doub phi = 20. * M_PI / 180.;
+
+	druckerprager * dp = new druckerprager(young,nu,c,phi);
+	TensorDoub  epst, epsp, projstress, projstrain;
+	MatDoub Dep;
+	Doub  projgamma;
+	//epst = -{0.01, -0.02, 0, 0, 0, 0.015};
+	epst.XX() = -0.05; epst.YY() = 0.0; epst.XY() = -0.0;
+	dp->closestpointproj(epst, epsp, projstress, projstrain, Dep, projgamma);
+
+	std::cout << projgamma << std::endl;
+	Dep.Print();
+
 
 	Powell<Doub(VecDoub_I &)> powell(distfunddp, 0.0001);
 	VecDoub initialguess(1, -2.);
