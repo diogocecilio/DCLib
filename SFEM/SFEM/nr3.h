@@ -303,6 +303,8 @@ public:
 	void Dot(const NRmatrix &A, NRmatrix &B);
 	void  CopyFromVector(const std::vector<std::vector<T>>&input);
 	void  FromFullToVoigt(NRmatrix<T> & full);
+	T NRmatrixNorm();
+
 
 	//inline void CopyFromNRtensor(NRtensor<T> source);
 	
@@ -319,6 +321,20 @@ void  NRmatrix<T>::FromFullToVoigt(NRmatrix<T> & voigt)
 	voigt[3][0] = v[0][2];
 	voigt[4][0] = v[1][2];
 	voigt[5][0] = v[0][1];
+}
+
+template <class T>
+T NRmatrix<T>::NRmatrixNorm()
+{
+	Doub val = 0.;
+	for (Int i = 0;i < this->nrows();i++)
+	{
+		for (Int j = 0;j < this->ncols();j++)
+		{
+			val += v[i][j] * v[i][j];
+		}
+	}
+	return sqrt(val);
 }
 
 //template <class T>
@@ -1046,9 +1062,13 @@ void NRtensor<T>::DeviatoricDiagonal(NRvector<T> & vec) const {
 
 template < class T >
 T NRtensor<T>::J2() const {
-	NRvector<T> s(3);
-	DeviatoricDiagonal(s);
-	T value = -s[0] * s[1] - s[0] * s[2] - s[1] * s[2] + v[_XY_] * v[_XY_] + v[_XZ_] * v[_XZ_] + v[_YZ_] * v[_YZ_];
+	//NRvector<T> s(3);
+	//DeviatoricDiagonal(s);
+	//T value = -s[0] * s[1] - s[0] * s[2] - s[1] * s[2] + v[_XY_] * v[_XY_] + v[_XZ_] * v[_XZ_] + v[_YZ_] * v[_YZ_];
+
+	T value = (pow(v[_XX_], 2) + 3 * pow(v[_XY_], 2) + 3 * pow(v[_XZ_], 2) + pow(v[_YY_], 2) + 3 * pow(v[_YZ_], 2) - v[_YY_] * v[_ZZ_] +
+		pow(v[_ZZ_], 2) - v[_XX_] * (v[_YY_] + v[_ZZ_])) / 3.;
+
 	if (value < 0)
 	{
 		throw(" \ Warning negative J2 ivariant ! \n ");
