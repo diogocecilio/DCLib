@@ -220,6 +220,10 @@ int main()
 {
 
 
+	IterativeSlopeStability();
+
+	system("PAUSE");
+	return 0;
 	Doub young = 20000.;
 	Doub nu = 0.3;
 	Doub c = 50;
@@ -304,8 +308,8 @@ int main()
 	OutPutPost(meshtopology, filemesh2);
 
 	cout << " \n number of elements " << allcoords.size() << endl;
-
-	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(210.,0.3, 0.24, 1., 0., 0, 2);
+	MatDoub bodyforce(2, 1, 0.);
+	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >( 1., bodyforce, 0, 2);
 	MatDoub KG, FG;
 	MatInt  linetopology;
 
@@ -399,8 +403,8 @@ void IterativeSlopeStability()
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
 	vector<vector<vector<Doub>>> allcoords;
-	string  elsstr = "elements-pressure-fino.txt";
-	string nodestr = "nodes-pressure-fino.txt";
+	string  elsstr = "mesh-talude-els.txt";
+	string nodestr = "mesh-talude-nodes.txt";
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
 
 	std::ofstream filemesh1("meshcoords.txt");
@@ -412,29 +416,44 @@ void IterativeSlopeStability()
 
 	cout << " \n number of elements " << allcoords.size() << endl;
 
-	Doub young = 210., nu = 0.3, thickness = 1., bodyforce = 0., sigy = 0.24;
+	Doub thickness = 1.;
+	Doub young = 20000.;
+	Doub nu = 0.3;
+	Doub c = 50;
+	Doub phi = 20. * M_PI / 180.;
 	Int planestress = 0;
+	MatDoub bodyforce(2, 1, 0.),newbodyforce;
+	bodyforce[0][0] = -20;
 
-
-	Int ndivs = 10000;
-	MatDoub path1, path2, path3;
-	vector<int>  idpath1, idpath2, iddisplace;
+	Int ndivs = 1000;
+	MatDoub pathbottom, pathleft, pathright,pathdisplace;
+	vector<int>  idsbottom, idsleft, idsright, iddisplace;
 	VecDoub a(2), b(2);
-	a[0] = 100.;a[1] = 0.;
-	b[0] = 200.;b[1] = 0;
-	gridmesh::Line(a, b, ndivs, path1);
-	gridmesh::FindIdsInPath(path1, allcoords, meshtopology, idpath1);
+	a[0] = 0.;a[1] = 0.;
+	b[0] = 75.;b[1] = 0;
+	gridmesh::Line(a, b, ndivs, pathbottom);
+	gridmesh::FindIdsInPath(pathbottom, allcoords, meshtopology, idsbottom);
+	cout << "IDS BOTTOM " << endl;
+	for (Int i = 0;i < idsbottom.size();i++)cout << idsbottom[i] << endl;
 
-	a[0] = 0.;a[1] = 100.;
-	b[0] = 0.;b[1] = 200.;
-	gridmesh::Line(a, b, ndivs, path2);
-	gridmesh::FindIdsInPath(path2, allcoords, meshtopology, idpath2);
-
-	a[0] = 200.;a[1] = 0.;
-	b[0] = 200.;b[1] = 0.01;
-	gridmesh::Line(a, b, ndivs, path3);
-	gridmesh::FindIdsInPath(path3, allcoords, meshtopology, iddisplace);
-
+	a[0] = 0.;a[1] = 0.;
+	b[0] = 0.;b[1] = 40.;
+	gridmesh::Line(a, b, ndivs, pathleft);
+	gridmesh::FindIdsInPath(pathleft, allcoords, meshtopology, idsleft);
+	cout << "IDS idsleft " << endl;
+	for (Int i = 0;i < idsleft.size();i++)cout << idsleft[i] << endl;
+	a[0] = 75.;a[1] = 0.;
+	b[0] = 75.;b[1] = 30;
+	gridmesh::Line(a, b, ndivs, pathright);
+	gridmesh::FindIdsInPath(pathright, allcoords, meshtopology, idsright);
+	cout << "IDS idsright " << endl;
+	for (Int i = 0;i < idsright.size();i++)cout << idsright[i] << endl;
+	a[0] = 34.99;a[1] = 39.99;
+	b[0] = 35.;b[1] = 40.;
+	gridmesh::Line(a, b, ndivs, pathdisplace);
+	gridmesh::FindIdsInPath(pathdisplace, allcoords, meshtopology, iddisplace);
+	cout << "IDS iddisplace " << endl;
+	for (Int i = 0;i < iddisplace.size();i++)cout << iddisplace[i] << endl;
 	Int sz = 2 * meshcoords.nrows();
 	MatDoub KG(sz, sz, 0.), FG(sz, 1, 0.), ptsweigths;
 
@@ -447,40 +466,13 @@ void IterativeSlopeStability()
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
 
-	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(young, nu, sigy, thickness, bodyforce, planestress, order);
-	material->fYC.setup(young, nu, sigy);
+	elastoplastic2D< druckerprager > *  material = new elastoplastic2D< druckerprager >(thickness, bodyforce, planestress, order);
+	material->fYC.setup(young, nu, c,phi);
 	material->SetMemory(nglobalpts, sz);
 
-	Doub finalload = 0.19209;
-	Doub fac[] = { 0.1 / finalload, 0.14 / finalload, 0.18 / finalload, 0.19 / finalload, 1. };
+	Doub fac[] = { 1.09,2.16,3.20,4.11,4.17824,4.18978,4.19572,4.19814 };
 
-
-
-	MatInt  linetopology;
-	vector<int> idpathcirc;
-	MatDoub pathcirc;
-	ndivs = 1000;
-	Doub delta;
-	pathcirc.assign(ndivs + 1, 2, 0.);
-	Int i = 0;
-	delta = (M_PI / 2.) / (Doub(ndivs));
-	for (Doub theta = 0;theta < M_PI / 2.; theta += delta) {
-		pathcirc[i][0] = 100. * cos(theta);
-		pathcirc[i][1] = 100. * sin(theta);
-		i++;
-	}
-
-	gridmesh::FindIdsInPath(pathcirc, allcoords, meshtopology, idpathcirc);
-	//for (int i = 0;i < idpathcirc.size();i++)std::cout << " ID  = " << idpathcirc[i] << endl;
-
-	vector<vector<int>>  linetopol = LineTopology(idpathcirc, 2);
-	ToMatInt(linetopol, linetopology);
-	//linetopology.Print();
-	material->ContributeCurvedLine(KG, FG, meshcoords, linetopology, finalload);
-
-	//FG.Print();
-
-	Int steps = 5;
+	Int steps = 8;
 	Int counterout = 1;
 	MatDoub solpost(steps, 2, 0.);
 	for (Int iload = 0; iload < steps; iload++)
@@ -493,6 +485,9 @@ void IterativeSlopeStability()
 		{
 			MatDoub FGint = FG;
 			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+			newbodyforce = bodyforce;
+			newbodyforce *= fac[iload];
+			material->UpdateBodyForce(newbodyforce);
 
 			//KG.Print();
 			//FINT.Print();
@@ -506,10 +501,13 @@ void IterativeSlopeStability()
 			Int dir, val;
 			dir = 1;
 			val = 0;
-			material->DirichletBC(KG, R, idpath1, dir, val);
+			material->DirichletBC(KG, R, idsbottom, dir, val);
 			dir = 0;
 			val = 0;
-			material->DirichletBC(KG, R, idpath2, dir, val);
+			material->DirichletBC(KG, R, idsright, dir, val);
+			dir = 0;
+			val = 0;
+			material->DirichletBC(KG, R, idsleft, dir, val);
 
 			MatDoub invKG, sol;
 			Cholesky * chol = new Cholesky(KG);
@@ -539,7 +537,7 @@ void IterativeSlopeStability()
 		material->UpdatePlasticStrain();
 		counterout++;
 		solpost[iload][0] = fabs(displace[2 * iddisplace[0]][0]);
-		solpost[iload][1] = fabs(fac[iload] * finalload);
+		solpost[iload][1] = fabs(newbodyforce[1][0]);
 
 	}
 
@@ -575,10 +573,10 @@ void IterativeProcessPressure()
 
 	cout << " \n number of elements " << allcoords.size() << endl;
 
-	Doub young = 210., nu = 0.3, thickness = 1., bodyforce = 0., sigy = 0.24;
+	Doub young = 210., nu = 0.3, thickness = 1., sigy = 0.24;
 	Int planestress = 0;
 
-
+	MatDoub  bodyforce(2,1,0.);
 	Int ndivs = 10000;
 	MatDoub path1, path2, path3;
 	vector<int>  idpath1, idpath2, iddisplace;
@@ -610,7 +608,7 @@ void IterativeProcessPressure()
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
 
-	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(young, nu, sigy, thickness, bodyforce, planestress, order);
+	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(thickness, bodyforce, planestress, order);
 	material->fYC.setup(young, nu, sigy);
 	material->SetMemory(nglobalpts, sz);
 
@@ -748,7 +746,7 @@ void IterativeProcess()
 
 	cout << " \n number of elements " << allcoords.size() << endl;
 
-	Doub young = 3000., nu = 0.2, thickness = 1., bodyforce = 0., sigy = 300.;
+	Doub young = 3000., nu = 0.2, thickness = 1., sigy = 300.;
 	Int planestress = 0;
 
 
@@ -790,8 +788,8 @@ void IterativeProcess()
 
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
-
-	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(young, nu, sigy, thickness, bodyforce, planestress, order);
+	MatDoub  bodyforce(2, 1, 0.);
+	elastoplastic2D< vonmises > *  material = new elastoplastic2D< vonmises >(thickness, bodyforce, planestress, order);
 	material->fYC.setup(young, nu, sigy);
 	material->SetMemory(nglobalpts, sz);
 
