@@ -29,9 +29,19 @@ public:
 		fK = young / (3.* (1. - 2.* nu));
 	}
 
-private:
+	inline void GetElasticParameters(Doub young, Doub nu, Doub sigy, Doub K, Doub G)
+	{
+		young = fyoung;
+		nu = fnu;
+		sigy = fsigy;
+		K = fK;
+		G = fG;
+	}
+
 	Doub fyoung;
 	Doub fnu;
+private:
+
 	Doub fsigy;
 	Doub fK;
 	Doub fG;
