@@ -1,12 +1,10 @@
 #include "elastoplastic2D.h"
 #include "vonmises.h"
-
+#include "druckerprager.h"
 
 template <class YC>
-elastoplastic2D<YC>::elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, Doub bodyforce, Int planestress, Int order, MatDoub  HHAT) : shapequad(order, 1)
+elastoplastic2D<YC>::elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, MatDoub bodyforce, Int planestress, Int order, MatDoub  HHAT) : shapequad(order, 1)
 {
-	fyoung = young;
-	fnu = nu;
 	fbodyforce = bodyforce;
 	fplanestress = planestress;
 	fthickness = thickness;
@@ -15,10 +13,9 @@ elastoplastic2D<YC>::elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickn
 }
 
 template <class YC>
-elastoplastic2D<YC>::elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, Doub bodyforce, Int planestress, Int order) : shapequad(order, 1)
+elastoplastic2D<YC>::elastoplastic2D(Doub thickness, MatDoub bodyforce, Int planestress, Int order) : shapequad(order, 1)
 {
-	fyoung = young;
-	fnu = nu;
+
 	fbodyforce = bodyforce;
 	fplanestress = planestress;
 	fthickness = thickness;
@@ -29,6 +26,12 @@ template <class YC>
 elastoplastic2D<YC>::elastoplastic2D(elastoplastic2D & copy)
 {
 }
+
+template <class YC>
+elastoplastic2D<YC>::elastoplastic2D()
+{
+}
+
 
 
 template <class YC>
@@ -43,11 +46,13 @@ void elastoplastic2D<YC>::SetMemory(Int nglobalpts, Int systemsize)
 	fepspvec.assign(nglobalpts, 0.);
 	fepspsolitern.assign(nglobalpts, 0.);
 	fglobalcounter = 0;
+
 }
 
 template <class YC>
 void elastoplastic2D<YC>::UpdateDisplacement(MatDoub displace)
 {
+
 	fdisplace = displace;
 }
 template <class YC>
@@ -55,14 +60,20 @@ void elastoplastic2D<YC>::UpdatePlasticStrain()
 {
 	fepspsolitern = fepspvec;
 	fglobalcounter = 0;
+
 }
+
+template <class YC>
+void elastoplastic2D<YC>::UpdateBodyForce(MatDoub newbodyforce)
+{
+	fbodyforce = newbodyforce;
+}
+
 
 template <class YC>
 void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &ef, Doub xi, Doub eta, Doub w, MatDoub elcoords,MatDoub eldisplace)
 {
-	MatDoub psis, GradPsi, elcoordst, xycoords, Jac, InvJac(2, 2), GradPhi, B, BT, N, NT, psist, C, BC, BCS, stress(3, 1, 0.), bodyforce(2, 1), temp, CS, KSt;
-	bodyforce[0][0] = 0;
-	bodyforce[1][0] = -fbodyforce;
+	MatDoub psis, GradPsi, elcoordst, xycoords, Jac, InvJac(2, 2), GradPhi, B, BT, N, NT, psist, C, BC, BCS, stress(3, 1, 0.), temp, CS, KSt;
 	shapes(psis, GradPsi, xi, eta);
 	psis.Transpose(psist);
 	psist.Mult(elcoords, xycoords);
@@ -150,8 +161,10 @@ void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &ef, Doub xi, Doub eta
 	//std::cout << " stress "<< std::endl;
 	//stress.Print();
 	//ek.Print();
+	//ef = (Transpose[BB].stress) weight DetJ;
+	//ef2 = (Transpose[NShapes].{0, -bodyforce}) weight DetJ;
 	BT.Mult(stress, ef);
-	NT.Mult(bodyforce, temp);
+	NT.Mult(fbodyforce, temp);
 	ef -= temp;
 	ef *= w*DetJ;
 }
@@ -285,8 +298,9 @@ void elastoplastic2D<YC>::assembleBandN(MatDoub &B, MatDoub &N, const MatDoub &p
 template <class YC>
 void elastoplastic2D<YC>::assembleConstitutiveMatrix(MatDoub &C, Doub mult)
 {
-	Doub nusqr = fnu*fnu;
-	Doub young = mult*fyoung, nu = fnu;
+	
+	Doub young = mult*fYC.fyoung, nu = fYC.fnu;
+	Doub nusqr = nu*nu;
 	C.assign(3, 3, 0.);
 	C[0][0] = young / (1 - nusqr);   C[0][1] = nu*young / (1 - nusqr);C[0][2] = 0.;
 	C[1][0] = nu*young / (1 - nusqr);C[1][1] = young / (1 - nusqr);   C[1][2] = 0.;
@@ -523,3 +537,4 @@ void elastoplastic2D<YC>::PostProcess(const vector<vector< vector<Doub > > > &al
 }
 
 template class elastoplastic2D<vonmises>;
+template class elastoplastic2D<druckerprager>;
