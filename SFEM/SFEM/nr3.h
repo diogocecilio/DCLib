@@ -304,6 +304,7 @@ public:
 	void  CopyFromVector(const std::vector<std::vector<T>>&input);
 	void  FromFullToVoigt(NRmatrix<T> & full);
 	T NRmatrixNorm();
+	T Det();
 
 
 	//inline void CopyFromNRtensor(NRtensor<T> source);
@@ -335,6 +336,51 @@ T NRmatrix<T>::NRmatrixNorm()
 		}
 	}
 	return sqrt(val);
+}
+
+template <class T>
+T NRmatrix<T>::Det()
+{
+	double SMALL = 1.0E-30;
+	T det = 1;
+	NRmatrix<T> A = *this;
+	int n = A.nrows();
+	// Row operations for i = 0, ,,,, n - 2 (n-1 not needed)
+	for (int i = 0; i < n - 1; i++)
+	{
+		// Partial pivot: find row r below with largest element in column i
+		int r = i;
+		double maxA = abs(A[i][i]);
+		for (int k = i + 1; k < n; k++)
+		{
+			double val = abs(A[k][i]);
+			if (val > maxA)
+			{
+				r = k;
+				maxA = val;
+			}
+		}
+		if (r != i)
+		{
+			for (int j = i; j < n; j++) swap(A[i][j], A[r][j]);
+			det = -det;
+		}
+
+		// Row operations to make upper-triangular
+		double pivot = A[i][i];
+		if (abs(pivot) < SMALL) return 0.0;              // Singular matrix
+
+		for (int r = i + 1; r < n; r++)                    // On lower rows
+		{
+			double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+			for (int j = i; j < n; j++) A[r][j] -= multiple * A[i][j];
+		}
+		det *= pivot;                                        // Determinant is product of diagonal
+	}
+
+	det *= A[n - 1][n - 1];
+
+	return det;
 }
 
 //template <class T>
