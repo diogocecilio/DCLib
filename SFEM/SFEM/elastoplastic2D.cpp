@@ -537,5 +537,39 @@ void elastoplastic2D<YC>::PostProcess(const vector<vector< vector<Doub > > > &al
 	}
 }
 
+template <class YC>
+void elastoplastic2D<YC>::PostProcessIntegrationPointVar(const vector<vector< vector<Doub > > > &allcoords, const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol)
+{
+	MatDoub ptsweigths,psis,psist,GradPsi,xycoords;
+	Doub xi, eta;
+	shapequad shape = shapequad(fOrder, 1);
+	shape.pointsandweigths(ptsweigths);
+	Int npts = ptsweigths.nrows();
+	Int nels = meshtopology.nrows();
+	MatDoub elcoords;
+	Int counter=0;
+	for (Int iel = 0;iel < nels;iel++)
+	{
+		GetElCoords(allcoords, iel, elcoords);
+		for (Int ipt = 0;ipt < npts;ipt++)
+		{
+			vector<double> soli(3);
+			xi = ptsweigths[ipt][0];
+			eta = ptsweigths[ipt][1];
+
+			shapes(psis, GradPsi, xi, eta);
+			psis.Transpose(psist);
+			psist.Mult(elcoords, xycoords);
+			Doub plasticj2 = fepspvec[counter].J2();
+			soli[0] = xycoords[0][0];
+			soli[1] = xycoords[0][1];
+			soli[2] =sqrt(plasticj2);
+			sol.push_back(soli);
+			counter++;
+
+		}
+	}
+}
+
 template class elastoplastic2D<vonmises>;
 template class elastoplastic2D<druckerprager>;
