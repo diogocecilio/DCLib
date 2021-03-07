@@ -67,7 +67,7 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 		MatDoub nvec;
 		MatDoub fulltensorproj = stressrecosntruction(sig, vec);
 		MatDoub Q = ComputeQ(fulltensorproj, tempepsemat, projstress, projstrain, projgamma,nvec);
-		Doub checkdet = 10e-9;
+		Doub checkdet = 0.001;
 		Doub detQ= fabs(Q.Det());
 
 		if (detQ < checkdet )
