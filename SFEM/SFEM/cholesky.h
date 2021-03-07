@@ -15,7 +15,7 @@ struct Cholesky {
 				if (i == j) {
 					if (sum <= 0.0) {
 						fail = true;
-						cout << " \n negative sum in Cholesky, exiting and trying LU...." << endl;
+						//cout << " \n negative sum in Cholesky, exiting and trying LU...." << endl;
 						return;
 						//throw("Cholesky failed");
 					}
