@@ -31,6 +31,9 @@ public:
 	void PostProcess(const vector<vector< vector<Doub > > > &allcoords,const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &solx, vector<vector<double>> &soly);
     void PostProcess(const vector<vector< vector<Doub > > > &allcoords,const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol);
 
+	void PostProcessIntegrationPointVar(const vector<vector< vector<Doub > > > &allcoords, const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol);
+
+
 	//void SetMemory(MatDoub displace, NRvector<TensorDoub> epspvec, NRvector<TensorDoub>  epspsolitern, Int globalcounter);
 	void SetMemory(Int ngloblapoints, Int systemsize);
 	void UpdateDisplacement(MatDoub displace);
