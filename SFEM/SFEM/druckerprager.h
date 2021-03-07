@@ -20,6 +20,10 @@ public:
 	MatDoub dadsig(TensorDoub sigprojvoigt);
 	MatDoub P();
 	MatDoub avec(TensorDoub sigprojvoigt);
+
+	Doub FindMinimum(MatDoub pt,Doub xitrial,bool flag);
+	MatDoub ComputeQ(MatDoub fulltensorproj, MatDoub tempepsemat, TensorDoub & projstress, TensorDoub & projstrain, Doub & projgamma,MatDoub & nvec);
+
 	//Doub   distfunddp(MatDoub &pt, VecDoub_I &x);
 	inline void setup(Doub young, Doub nu, Doub coesion, Doub frictionangle) {
 		fyoung = young;
@@ -34,17 +38,6 @@ public:
 		fb = fa*ftanphi;
 
 	}
-	 Doub distfunc(MatDoub pt, VecDoub_I &x);
-	//  Doub distfunc(MatDoub pt, VecDoub_I &x) {
-
-	//	Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
-	//	Doub xi = x[0];
-	//	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
-
-	//	return ((4. * pow(sqrt(3.)*sig1 + sqrt(3)*sig2 + sqrt(3.)*sig3 - 3. * xi, 2)) / fK + (9. * pow(-2. * sig1 + sig2 + sig3 +
-	//		2 * sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2.))*cos(beta), 2.)) / fG +
-	//		(3 * pow(-3. * sig2 + 3. * sig3 + 2 * sqrt(3.)*sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2))*sin(beta), 2)) / fG) / 108.;
-	//}
 	 Doub fyoung;
 	 Doub fnu;
 
@@ -56,6 +49,7 @@ private:
 	Doub ftanphi;
 	Doub fapex;
 	Doub fa, fb;
+	bool fflag = true;
 };
 
 
@@ -76,6 +70,9 @@ struct Funcstruct:druckerprager {
 	{
 		Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
 		Doub xi = x[0];
+		if (xi > fapex) {
+			xi = fapex;
+		}
 		Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
 
 		Doub func2 = ((4. * pow(sqrt(3.)*sig1 + sqrt(3)*sig2 + sqrt(3.)*sig3 - 3. * xi, 2)) / fK + (9. * pow(-2. * sig1 + sig2 + sig3 +
@@ -83,6 +80,25 @@ struct Funcstruct:druckerprager {
 			(3 * pow(-3. * sig2 + 3. * sig3 + 2 * sqrt(3.)*sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2))*sin(beta), 2)) / fG) / 108.;
 		return func2;
 	}
+
+	void df(VecDoub_I &x, VecDoub_O &deriv)
+	{
+		Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
+		Doub xi = x[0];
+		if (xi > fapex) {
+			xi = fapex;
+		}
+		Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
+		Doub G = fG,K = fK, a = fa, b = fb, apex = fapex;
+		deriv[0] = ((-24 * (sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xi)) / K + (18 * pow(b, 2)*(-2 * sqrt(3)*apex + 2 * xi)*cos(beta)*
+			(-2 * sig1 + sig2 + sig3 + 2 * sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2))*cos(beta))) /
+			(pow(a, 2)*G*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2))) +
+			(6 * sqrt(3)*pow(b, 2)*(-2 * sqrt(3)*apex + 2 * xi)*sin(beta)*(-3 * sig2 + 3 * sig3 +
+				2 * sqrt(3)*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2))*sin(beta))) /
+			(pow(a, 2)*G*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2)))) / 108.;
+	}
+
+
 	void setpt(MatDoub ptext, Doub young, Doub nu, Doub coesion, Doub frictionangle)
 	{
 		pt = ptext;
