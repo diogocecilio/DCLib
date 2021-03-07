@@ -55,132 +55,163 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 	else {
 		Doub xitrial = I1 / sqrt(3.);
 		Doub rhotrial = sqrt(2. * J2);
-		//std::cout << "rhotrial = " << rhotrial << std::endl;
 		MatDoub pt, vec, vect;
 		stresstrialtensor.EigenSystem(pt, vec);
-		//std::cout << "autovalores  \n";
-		//pt.Print();
-		//std::cout << "autovetores  \n";
-		//vec.Print();
+
 		Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
 		Doub betasol = atan((sqrt(3.)*(-sig2 + sig3)) / (-2.* sig1 + sig2 + sig3));
-		//std::cout << "betasol  = "<< betasol <<std::endl;
 		
-		VecDoub initguess(1,0.);
-		initguess[0] = xitrial;
-		Funcstruct func;
-		func.setpt(pt,  fyoung,  fnu,  fcoesion,  fphi);
-		Powell<Funcstruct> powell(func);
-		VecDoub xisolvec = powell.minimize(initguess);
-		Doub xisol = xisolvec[0];
-		//std::cout << "xisol  = " << xisol  << std::endl;
+		Doub xisol=FindMinimum(pt,xitrial, fflag);
 		MatDoub sig = HW(F1HWCylDruckerPragerSmoothPSMATCH(xisol, rhotrial, betasol));
-		//std::cout << "sig  = "  << std::endl;
-		//sig.Print();
 
+		MatDoub nvec;
 		MatDoub fulltensorproj = stressrecosntruction(sig, vec);
-		//std::cout << "fullprojtensor  = "  << std::endl;
-		//fulltensorproj.Print();
-		MatDoub projVoigtMat,nvec, invCe = GetInverseElasticMatrix(), epsemat;
-		fulltensorproj.FromFullToVoigt(projVoigtMat);
-		//std::cout << "projVoigtMat  = " << std::endl;
-		//projVoigtMat.Print();
+		MatDoub Q = ComputeQ(fulltensorproj, tempepsemat, projstress, projstrain, projgamma,nvec);
+		Doub checkdet = 10e-9;
+		Doub detQ= fabs(Q.Det());
 
-		TensorDoub voigtProjTensor, epsptensor;
-		voigtProjTensor.FromNRmatrixToTensor(projVoigtMat, voigtProjTensor);
-		projstress = voigtProjTensor;
+		if (detQ < checkdet )
+		{
+			Dept = C;
+			Dep.assign(3, 3, 0.);
+			Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
+			Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
+			Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
+			fflag = true;
+		}
+		else {
+		//	Q.Print();
+			MatDoub invQ,R;
+			Cholesky *chol = new Cholesky(Q);
+			chol->inverse(invQ);
+			if (chol->fail)
+			{
+				LUdcmp *lu = new LUdcmp(Q);
+				lu->inverse(invQ);
+			}
 
+			invQ.Mult(C, R);
+			Dept = R;
+			MatDoub asol, tempprod, tempprodT, temp2;
+			//cout << "nvec = " << endl;
+			//nvec.Print();
+			R.Mult(nvec, tempprod);
+			Doub sum = 0.;
+			for (Int i = 0;i < nvec.nrows();i++)sum += nvec[i][0] * tempprod[i][0];
+			//std::cout << "sum = " << sum  <<std::endl;
+			tempprod.Transpose(tempprodT);
+			tempprod.Mult(tempprodT, temp2);
 
-		nvec = avec(voigtProjTensor);
-		//std::cout << "nvec  = " << std::endl;
-		//nvec.Print();
+			temp2 *= 1. / sum;
+			Dept -= temp2;
 
-		invCe.Mult(projVoigtMat, epsemat);
-		MatDoub epspmat = tempepsemat;
-		epspmat -= epsemat;
-		voigtProjTensor.FromNRmatrixToTensor(epspmat, epsptensor);
+			Dep.assign(3, 3, 0.);
+			Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
+			Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
+			Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
+			fflag = true;
+			//Dep.Print();
 
-		voigtProjTensor.FromNRmatrixToTensor(epsemat, projstrain);
-		Doub gamma = epsptensor.Norm() / nvec.NRmatrixNorm();
-		projgamma = gamma;
-		//std::cout << "gamma  = " << gamma  <<std::endl;
-
-		MatDoub dnvecdsig = dadsig(voigtProjTensor);
-
-		//std::cout << "dnvecdsig  = " << std::endl;
-
-		//dnvecdsig.Print();
-
-		MatDoub Q(6, 6, 0.), invQ, R;for (Int i = 0;i < 6;i++)Q[i][i] = 1.;
-		MatDoub sec;
-		C.Mult(dnvecdsig, sec);
-		sec *= gamma;
-		Q += sec;
-		//std::cout << "Q  = " << std::endl;
-		//Q.Print();
-
-		LUdcmp *lu = new LUdcmp(Q);
-		lu->inverse(invQ);
-		//std::cout << "invQ  = " << std::endl;
-		//invQ.Print();
-
-		invQ.Mult(C, R);
-
-		//std::cout << "R  = " << std::endl;
-		//R.Print();
-
-		Dept = R;
-		MatDoub asol, tempprod, tempprodT, temp2;
-		R.Mult(nvec, tempprod);
-		//std::cout << "nvec = "  << std::endl;
-		//nvec.Print();
-		//std::cout << "tempprod = " << std::endl;
-		//tempprod.Print();
-		Doub sum = 0.;
-		for (Int i = 0;i < nvec.nrows();i++)sum += nvec[i][0] * tempprod[i][0];
-		//std::cout << "sum = " << sum  <<std::endl;
-		tempprod.Transpose(tempprodT);
-		tempprod.Mult(tempprodT, temp2);
-		//std::cout << "Outer[a.R,a.R] = " << std::endl;
-		//temp2.Print();
-
-		temp2 *= 1. / sum;
-		Dept -= temp2;
-
-		Dep.assign(3, 3, 0.);
-		Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
-		Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
-		Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
-
-		/*Dep2D = { { Dep[[1, 1]], Dep[[1, 2]], Dep[[1, 6]] },{ Dep[[2, 1]],
-		Dep[[2, 2]], Dep[[2, 6]] },{ Dep[[6, 1]], Dep[[6, 2]],
-		Dep[[6, 6]] } };
-		sigproj2D = { sigprojvoigth[[1]], sigprojvoigth[[2]],
-		sigprojvoigth[[6]] };
-		*/
-		//std::cout << "DEP = " << std::endl;
-		//Dep.Print();
+		}
 	}
 }
 
+Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
+{
+	Doub xisol;
+	VecDoub initguess(1, 0.), tempguess(1, 0.);
+	initguess[0] = xitrial;
 
+	Funcstruct func;
+	func.setpt(pt, fyoung, fnu, fcoesion, fphi);
+
+	if (true) {
+		Doub distxi = 10e12;
+		Doub delta = fabs(xitrial)*100.;
+		Doub steps = 10.;
+		for (Doub xiguess = -delta; xiguess <= delta; xiguess += 2 *delta / steps) {
+			//cout << "xiguess = " << xiguess << endl;
+			tempguess[0] = xiguess;
+			Doub distnew = func.operator()(tempguess);
+			if (fabs(distnew) < fabs(distxi)) {
+				initguess[0] = tempguess[0];
+				distxi = distnew;
+				//cout << "distnew = " << distnew << endl;
+				//cout << "initguess = " << initguess[0] << endl;
+			}
+
+		}
+		//Doub tol = 1.e-8;
+		//Frprmn<Funcstruct> frprmn(func, tol);
+		//VecDoub xisolvec = frprmn.minimize(initguess);
+		//xisol = xisolvec[0];
+
+		Powell<Funcstruct> powell(func, 1.e-5);
+		VecDoub xisolvec = powell.minimize(xisolvec);
+		xisol = xisolvec[0];
+
+	}
+	else {
+
+		 Doub tol = 1.e-8;
+		 Frprmn<Funcstruct> frprmn(func, tol);
+		 VecDoub xisolvec = frprmn.minimize(initguess);
+		 xisol = xisolvec[0];
+
+		 Powell<Funcstruct> powell(func, tol);
+		 xisolvec = powell.minimize(xisolvec);
+	}
+
+	return xisol;
+}
+
+MatDoub druckerprager::ComputeQ(MatDoub fulltensorproj, MatDoub tempepsemat, TensorDoub & projstress, TensorDoub & projstrain, Doub & projgamma, MatDoub &nvec)
+{
+	MatDoub C = GetElasticMatrix();
+
+	MatDoub projVoigtMat, invCe = GetInverseElasticMatrix(), epsemat;
+	fulltensorproj.FromFullToVoigt(projVoigtMat);
+
+	TensorDoub voigtProjTensor, epsptensor;
+	voigtProjTensor.FromNRmatrixToTensor(projVoigtMat, voigtProjTensor);
+	projstress = voigtProjTensor;
+
+	nvec = avec(voigtProjTensor);
+
+	//cout << "nvec = " << endl;
+	//nvec.Print();
+
+	invCe.Mult(projVoigtMat, epsemat);
+	MatDoub epspmat = tempepsemat;
+	epspmat -= epsemat;
+	voigtProjTensor.FromNRmatrixToTensor(epspmat, epsptensor);
+
+	voigtProjTensor.FromNRmatrixToTensor(epsemat, projstrain);
+	Doub gamma = epsptensor.Norm() / nvec.NRmatrixNorm();
+	projgamma = gamma;
+	//std::cout << "gamma  = " << gamma  <<std::endl;
+
+	MatDoub dnvecdsig = dadsig(voigtProjTensor);
+
+
+	MatDoub Q(6, 6, 0.);for (Int i = 0;i < 6;i++)Q[i][i] = 1.;
+	MatDoub sec;
+	C.Mult(dnvecdsig, sec);
+	sec *= gamma;
+	Q += sec;
+
+	return Q;
+}
 
 Doub druckerprager::yield(Doub xi,Doub rho)
 {
 	//return 1 + pow(rho, 2) / (2.*pow(fb, 2)) - pow((fapex - xi)/ sqrt(3), 2) / pow(fa, 2);
+	if (xi > fapex) {
+		xi = fapex;
+	}
 	return-(pow(((fapex - xi / sqrt(3.)) / fa), 2) - pow(((rho / sqrt(2.)) / fb), 2) - 1);
 }
 
-Doub druckerprager::distfunc(MatDoub pt, VecDoub_I &x)
-{
-	Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
-	Doub xi = x[0];
-	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
-
-	return ((4. * pow(sqrt(3.)*sig1 + sqrt(3)*sig2 + sqrt(3.)*sig3 - 3. * xi, 2)) / fK + (9. * pow(-2. * sig1 + sig2 + sig3 +
-		2 * sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2.))*cos(beta), 2.)) / fG +
-		(3 * pow(-3. * sig2 + 3. * sig3 + 2 * sqrt(3.)*sqrt((pow(fb, 2)*(-3. * pow(fa, 2) + 3. * pow(fapex, 2) - 2. * sqrt(3.)*fapex*xi + pow(xi, 2))) / pow(fa, 2))*sin(beta), 2)) / fG) / 108.;
-}
 
 MatDoub druckerprager::GetElasticMatrix()
 {
