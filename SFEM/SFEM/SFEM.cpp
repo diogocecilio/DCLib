@@ -116,46 +116,48 @@ struct Funcd {
 };
 
 struct Funcd2 {
+
+	Doub young = 20000.;
+	Doub nu = 0.49;
+	Doub c = 50;
+	Doub phi = M_PI / 9.;
+	Doub sig1 = 105.627, sig2 = 78.0876, sig3 = 53.7359;
+	Doub tanphi = (3.*tan(phi)) / sqrt(9. + 12.* tan(phi) *tan(phi));
+	Doub apex = c * 1. / tan(phi);
+	Doub a = (c / (sqrt(3)*tan(phi)) - apex);
+	Doub b = a*tanphi;
+	Doub K = (young) / (3.* (1. - 2.* nu));
+	Doub G = young / (2.* (1. + nu));
+	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
+
 	Doub operator() (VecDoub_I &x)
 	{
-		return (1 - x[0])*(1 - x[0]) + 100*pow((-pow(x[0],2) - x[1]),2);
+		Doub xiint = x[0];
+		return((4 * pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xiint, 2)) / K + (9 * pow(-2 * sig1 + sig2 + sig3 +
+			2 * sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xiint + pow(xiint, 2))) / pow(a, 2))*cos(beta), 2)) / G +
+			(3 * pow(-3 * sig2 + 3 * sig3 + 2 * sqrt(3)*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xiint + pow(xiint, 2))) / pow(a, 2))*sin(beta), 2)) / G) / 108.;
 	}
 	void df(VecDoub_I &x, VecDoub_O &deriv)
 	{
-		deriv[0] = -2 * (1 - x[0]) - 400 * x[0]*(-pow(x[0], 2) - x[1]);
-		deriv[1] = -200*(-pow(x[0],2) - x[1]);
+		Doub xi = x[0];
+		deriv[0] = ((-24 * (sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xi)) / K + (18 * pow(b, 2)*(-2 * sqrt(3)*apex + 2 * xi)*cos(beta)*
+			(-2 * sig1 + sig2 + sig3 + 2 * sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2))*cos(beta))) /
+			(pow(a, 2)*G*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2))) +
+			(6 * sqrt(3)*pow(b, 2)*(-2 * sqrt(3)*apex + 2 * xi)*sin(beta)*(-3 * sig2 + 3 * sig3 +
+				2 * sqrt(3)*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2))*sin(beta))) /
+			(pow(a, 2)*G*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xi + pow(xi, 2))) / pow(a, 2)))) / 108.;
 	}
 };
 
-Doub func2d2(VecDoub_I &x)
-{
-	return (1 - x[0])*(1 - x[0]) + 100 * pow((-pow(x[0], 2) - x[1]), 2);
-}
-
-//Doub distfuncdp(VecDoub_I &x)
-//{
-//	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
-//
-//	Doub val = (8 * pow(a, 2)*G*pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xi, 2) +
-//		6 * K*pow(sqrt(3)*a*(2 * sig1 - sig2 - sig3) + 2 * b*(3 * apex - sqrt(3)*xi)*cos(beta), 2) +
-//		6 * K*pow(3 * a*(sig2 - sig3) + 2 * b*(3 * apex - sqrt(3)*xi)*sin(beta), 2)) / (216.*pow(a, 2)*G*K);
-//}
-
 Doub distfunddp(VecDoub_I &x){
-	//subst2 = { young -> 10 ^ 7, nu -> 0.48, G->young / (2 (1 + nu)),
-	//	K -> (young) / (3 (1 - 2 nu)), a -> (c / (Sqrt[3] Tan[phi]) - apex),
-	//	b->a tanphi, apex->c Cot[phi] , phi->Pi / 9., c -> 490.,
-	//	tanphi -> - (3 Tan[phi]) / Sqrt[9 + 12 Tan[phi] ^ 2] };
-	Doub young = 10e7;
-	Doub nu = 0.48;
-	Doub c = 490;
+
+	Doub young = 20000.;
+	Doub nu = 0.49;
+	Doub c = 50;
 	Doub phi = M_PI / 9.;
-	//{-505.176, -630.033, -2500.23}
-	//{1280.72, -1356.11, -2833.72}
-	//Doub sig1= -505.176, sig2= -630.033, sig3= -2500.23;
-	Doub sig1 = 1280.72, sig2 = -1356.11, sig3 = - 2833.72;
+	Doub sig1 = 105.627, sig2 = 78.0876, sig3 = 53.7359;
 	Doub tanphi = (3.*tan(phi)) / sqrt(9. + 12.* tan(phi) *tan(phi));
-	Doub apex= c * 1. / tan(phi);
+	Doub apex = c * 1. / tan(phi);
 
 	Doub a = (c / (sqrt(3)*tan(phi)) - apex);
 	Doub b = a*tanphi;
@@ -165,10 +167,6 @@ Doub distfunddp(VecDoub_I &x){
 
 	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
 
-	if (xiint > apex)
-	{
-		xiint = apex;
-	}
 	Doub func = ((4 * pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xiint,2)) / K + (9 * pow(-2 * sig1 + sig2 + sig3 +
 	2 * sqrt((pow(b,2)*(-3 * pow(a,2) + 3 * pow(apex,2) - 2 * sqrt(3)*apex*xiint + pow(xiint,2))) / pow(a,2))*cos(beta),2)) / G +
 		(3 * pow(-3 * sig2 + 3 * sig3 + 2 * sqrt(3)*sqrt((pow(b,2)*(-3 * pow(a,2) + 3 * pow(apex,2) - 2 * sqrt(3)*apex*xiint + pow(xiint,2))) / pow(a,2))*sin(beta),2)) / G) / 108.;
@@ -182,18 +180,11 @@ struct Func {
 
 Doub Func::operator()(VecDoub_I &x)
 {
-	//subst2 = { young -> 10 ^ 7, nu -> 0.48, G->young / (2 (1 + nu)),
-	//	K -> (young) / (3 (1 - 2 nu)), a -> (c / (Sqrt[3] Tan[phi]) - apex),
-	//	b->a tanphi, apex->c Cot[phi] , phi->Pi / 9., c -> 490.,
-	//	tanphi -> - (3 Tan[phi]) / Sqrt[9 + 12 Tan[phi] ^ 2] };
-	Doub young = 10e7;
-	Doub nu = 0.48;
-	Doub c = 490;
+	Doub young = 20000.;
+	Doub nu = 0.49;
+	Doub c = 50;
 	Doub phi = M_PI / 9.;
-	//{-505.176, -630.033, -2500.23}
-	//{1280.72, -1356.11, -2833.72}
-	//Doub sig1= -505.176, sig2= -630.033, sig3= -2500.23;
-	Doub sig1 = 1280.72, sig2 = -1356.11, sig3 = -2833.72;
+	Doub sig1 = 105.627, sig2 = 78.0876, sig3 = 53.7359;
 	Doub tanphi = (3.*tan(phi)) / sqrt(9. + 12.* tan(phi) *tan(phi));
 	Doub apex = c * 1. / tan(phi);
 
@@ -205,15 +196,13 @@ Doub Func::operator()(VecDoub_I &x)
 
 	Doub beta = atan((sqrt(3)*(-sig2 + sig3)) / (-2 * sig1 + sig2 + sig3));
 
-	if (xiint > apex)
-	{
-		xiint = apex;
-	}
 	Doub func = ((4 * pow(sqrt(3)*sig1 + sqrt(3)*sig2 + sqrt(3)*sig3 - 3 * xiint, 2)) / K + (9 * pow(-2 * sig1 + sig2 + sig3 +
 		2 * sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xiint + pow(xiint, 2))) / pow(a, 2))*cos(beta), 2)) / G +
 		(3 * pow(-3 * sig2 + 3 * sig3 + 2 * sqrt(3)*sqrt((pow(b, 2)*(-3 * pow(a, 2) + 3 * pow(apex, 2) - 2 * sqrt(3)*apex*xiint + pow(xiint, 2))) / pow(a, 2))*sin(beta), 2)) / G) / 108.;
 	return func;
 }
+
+
 
 
 int main()
@@ -224,25 +213,9 @@ int main()
 
 	system("PAUSE");
 	return 0;
-	Doub young = 20000.;
-	Doub nu = 0.3;
-	Doub c = 50;
-	Doub phi = 20. * M_PI / 180.;
 
-	druckerprager * dp = new druckerprager(young,nu,c,phi);
-	TensorDoub  epst, epsp, projstress, projstrain;
-	MatDoub Dep;
-	Doub  projgamma;
-	//epst = -{0.01, -0.02, 0, 0, 0, 0.015};
-	epst.XX() = -0.05; epst.YY() = 0.0; epst.XY() = -0.0;
-	dp->closestpointproj(epst, epsp, projstress, projstrain, Dep, projgamma);
-
-	std::cout << projgamma << std::endl;
-	//Dep.Print();
-
-
-	Powell<Doub(VecDoub_I &)> powell(distfunddp, 0.0001);
-	VecDoub initialguess(1, -2.);
+	Powell<Doub(VecDoub_I &)> powell(distfunddp);
+	VecDoub initialguess(1,  (105.627+ 78.0876+ 53.7359)/sqrt(3));
 	VecDoub p = powell.minimize(initialguess);
 	p.Print();
 
@@ -254,11 +227,9 @@ int main()
 
 
 	Funcd2 funcd;
-	Frprmn<Funcd2> frprmn(funcd, 0.0001);
-	VecDoub pinit(2,1.);
-	pinit[0] = 3.5;
-	pinit[1] = 1.5;
-	VecDoub p0 = frprmn.minimize(pinit);
+	Frprmn<Funcd2> frprmn(funcd);
+	VecDoub pinit(1,1.);
+	VecDoub p0 = frprmn.minimize(initialguess);
 	p0.Print();
 
 
@@ -418,12 +389,12 @@ void IterativeSlopeStability()
 
 	Doub thickness = 1.;
 	Doub young = 20000.;
-	Doub nu = 0.3;
+	Doub nu = 0.49;
 	Doub c = 50;
 	Doub phi = 20. * M_PI / 180.;
 	Int planestress = 0;
 	MatDoub bodyforce(2, 1, 0.),newbodyforce;
-	bodyforce[0][0] = -20;
+	bodyforce[1][0] = -20.;
 
 	Int ndivs = 1000;
 	MatDoub pathbottom, pathleft, pathright,pathdisplace;
@@ -433,27 +404,27 @@ void IterativeSlopeStability()
 	b[0] = 75.;b[1] = 0;
 	gridmesh::Line(a, b, ndivs, pathbottom);
 	gridmesh::FindIdsInPath(pathbottom, allcoords, meshtopology, idsbottom);
-	cout << "IDS BOTTOM " << endl;
-	for (Int i = 0;i < idsbottom.size();i++)cout << idsbottom[i] << endl;
+	//cout << "IDS BOTTOM " << endl;
+	//for (Int i = 0;i < idsbottom.size();i++)cout << idsbottom[i] << endl;
 
 	a[0] = 0.;a[1] = 0.;
 	b[0] = 0.;b[1] = 40.;
 	gridmesh::Line(a, b, ndivs, pathleft);
 	gridmesh::FindIdsInPath(pathleft, allcoords, meshtopology, idsleft);
-	cout << "IDS idsleft " << endl;
-	for (Int i = 0;i < idsleft.size();i++)cout << idsleft[i] << endl;
+	//cout << "IDS idsleft " << endl;
+	//for (Int i = 0;i < idsleft.size();i++)cout << idsleft[i] << endl;
 	a[0] = 75.;a[1] = 0.;
 	b[0] = 75.;b[1] = 30;
 	gridmesh::Line(a, b, ndivs, pathright);
 	gridmesh::FindIdsInPath(pathright, allcoords, meshtopology, idsright);
-	cout << "IDS idsright " << endl;
-	for (Int i = 0;i < idsright.size();i++)cout << idsright[i] << endl;
+	//cout << "IDS idsright " << endl;
+	//for (Int i = 0;i < idsright.size();i++)cout << idsright[i] << endl;
 	a[0] = 34.99;a[1] = 39.99;
 	b[0] = 35.;b[1] = 40.;
 	gridmesh::Line(a, b, ndivs, pathdisplace);
 	gridmesh::FindIdsInPath(pathdisplace, allcoords, meshtopology, iddisplace);
-	cout << "IDS iddisplace " << endl;
-	for (Int i = 0;i < iddisplace.size();i++)cout << iddisplace[i] << endl;
+	//cout << "IDS iddisplace " << endl;
+	//for (Int i = 0;i < iddisplace.size();i++)cout << iddisplace[i] << endl;
 	Int sz = 2 * meshcoords.nrows();
 	MatDoub KG(sz, sz, 0.), FG(sz, 1, 0.), ptsweigths;
 
@@ -470,7 +441,8 @@ void IterativeSlopeStability()
 	material->fYC.setup(young, nu, c,phi);
 	material->SetMemory(nglobalpts, sz);
 
-	Doub fac[] = { 1.09,2.16,3.20,4.11,4.17824,4.18978,4.19572,4.19814 };
+	Doub fac[] = {2, 3.024, 3.152, 4.048, 4.176, 4.304, 4.432,
+		4.56,4.6,4.7 };
 
 	Int steps = 8;
 	Int counterout = 1;
@@ -479,22 +451,20 @@ void IterativeSlopeStability()
 	{
 		std::cout << "load step = " << iload << std::endl;
 		Int counter = 0, maxcount = 30;
-		Doub err1 = 10., err2 = 10., tol = 10.e-5;
+		Doub err1 = 10., err2 = 10., tol = 10e-3;
 		MatDoub dw(sz, 1, 0.), res(sz, 1, 0.), FINT, R;
 		while (counter <  maxcount && err1 > tol)
 		{
-			MatDoub FGint = FG;
-			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+
 			newbodyforce = bodyforce;
 			newbodyforce *= fac[iload];
 			material->UpdateBodyForce(newbodyforce);
+			MatDoub FGint = FG;
+			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+	
 
-			//KG.Print();
-			//FINT.Print();
 
-			FGint *= fac[iload];
-			FGint -= FINT;
-			R = FGint;
+			R = FINT;
 
 			//R.Print();
 
@@ -512,6 +482,11 @@ void IterativeSlopeStability()
 			MatDoub invKG, sol;
 			Cholesky * chol = new Cholesky(KG);
 			chol->inverse(invKG);
+			if (chol->fail)
+			{
+				LUdcmp *lu = new LUdcmp(KG);
+				chol->inverse(invKG);
+			}
 
 			//LUdcmp * LU = new LUdcmp(KG);
 			//LU->inverse(invKG);
@@ -521,19 +496,15 @@ void IterativeSlopeStability()
 			displace += dw;
 			material->UpdateDisplacement(displace);
 			Doub rnorm = 0., normdw = 0., normfg = 0., unorm = 0.;
-			for (Int i = 0;i < R.nrows();i++)rnorm += R[i][0] * R[i][0];
-			for (Int i = 0;i < dw.nrows();i++)normdw += dw[i][0] * dw[i][0];
-			for (Int i = 0;i < FG.nrows();i++)normfg += FG[i][0] * fac[iload] * FG[i][0] * fac[iload];
-			for (Int i = 0;i < displace.nrows();i++)unorm += displace[i][0] * displace[i][0];
-			rnorm = sqrt(fabs(rnorm));
-			normdw = sqrt(fabs(normdw));
-			normfg = sqrt(fabs(normfg));
-			unorm = sqrt(fabs(unorm));
-			err1 = rnorm / normfg;
+			rnorm = R.NRmatrixNorm();
+			normdw = dw.NRmatrixNorm();
+			unorm = displace.NRmatrixNorm();
+			err1 = rnorm;
 			err2 = normdw / unorm;
-			std::cout << " Iteration number = " << counter << " |  |R|/|FE| = " << err1 << " | deltau/u " << err2 << std::endl;
+			std::cout << " Iteration number = " << counter << " |  |R| = " << rnorm <<" | Unrom  = " << unorm  << " | deltau/u " << err2 << std::endl;
 			counter++;
 		}
+
 		material->UpdatePlasticStrain();
 		counterout++;
 		solpost[iload][0] = fabs(displace[2 * iddisplace[0]][0]);
