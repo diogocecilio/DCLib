@@ -165,7 +165,8 @@ void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &ef, Doub xi, Doub eta
 	//ef2 = (Transpose[NShapes].{0, -bodyforce}) weight DetJ;
 	BT.Mult(stress, ef);
 	NT.Mult(fbodyforce, temp);
-	ef -= temp;
+	temp -= ef;
+	ef = temp;
 	ef *= w*DetJ;
 }
 template <class YC>
