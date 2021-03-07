@@ -374,6 +374,8 @@ void IterativeSlopeStability()
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
 	vector<vector<vector<Doub>>> allcoords;
+	//string  elsstr = "els-grossa.txt";
+	//string nodestr = "nodes-grossa.txt";
 	string  elsstr = "mesh-talude-els.txt";
 	string nodestr = "mesh-talude-nodes.txt";
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
@@ -441,10 +443,12 @@ void IterativeSlopeStability()
 	material->fYC.setup(young, nu, c,phi);
 	material->SetMemory(nglobalpts, sz);
 
-	Doub fac[] = {2, 3.024, 3.152, 4.048, 4.176, 4.304, 4.432,
-		4.56,4.6,4.7 };
+	Doub fac[] = { 2., 2.135, 2.27, 2.405, 2.54, 2.675, 2.81, 2.945, 3.08, 3.215, 3.35, 
+		3.485, 3.62, 3.755, 3.89, 4.025, 4.16, 4.295, 4.43, 4.565, 4.7 };
 
-	Int steps = 8;
+
+
+	Int steps = 21;
 	Int counterout = 1;
 	MatDoub solpost(steps, 2, 0.);
 	for (Int iload = 0; iload < steps; iload++)
