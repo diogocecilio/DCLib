@@ -374,10 +374,10 @@ void IterativeSlopeStability()
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
 	vector<vector<vector<Doub>>> allcoords;
-	//string  elsstr = "els-grossa.txt";
-	//string nodestr = "nodes-grossa.txt";
-	string  elsstr = "mesh-talude-els.txt";
-	string nodestr = "mesh-talude-nodes.txt";
+	string  elsstr = "els-grossa.txt";
+	string nodestr = "nodes-grossa.txt";
+	//string  elsstr = "mesh-talude-els.txt";
+	//string nodestr = "mesh-talude-nodes.txt";
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
 
 	std::ofstream filemesh1("meshcoords.txt");
@@ -512,7 +512,7 @@ void IterativeSlopeStability()
 		material->UpdatePlasticStrain();
 		counterout++;
 		solpost[iload][0] = fabs(displace[2 * iddisplace[0]][0]);
-		solpost[iload][1] = fabs(newbodyforce[1][0]);
+		solpost[iload][1] = fabs(newbodyforce[1][0]/20.);
 
 	}
 
@@ -522,6 +522,12 @@ void IterativeSlopeStability()
 	material->PostProcess(allcoords, meshtopology, displace, solx, soly);
 	std::ofstream file("soly.txt");
 	OutPutPost(soly, file);
+
+	vector<vector<double>> epsppost;
+	material->PostProcessIntegrationPointVar(allcoords, meshtopology, displace, epsppost);
+	std::ofstream file2("epsppost.txt");
+	OutPutPost(epsppost, file2);
+
 	//return sol[2 * idpath1[0] + 1][0];
 
 }
