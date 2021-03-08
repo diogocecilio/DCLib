@@ -17,9 +17,9 @@ public:
 //	elastmat2D();
 //	~elastmat2D();
 //
-	void Contribute(MatDoub &ek, MatDoub &ef, Doub xi, Doub eta, Doub w, MatDoub elcoords, MatDoub eldisplace);
-	void CacStiff(MatDoub &ek, MatDoub &ef, const MatDoub  &elcoords, MatDoub eldisplace);
-	void Assemble(MatDoub &KG, MatDoub &FG, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology);
+	void Contribute(MatDoub &ek, MatDoub &efint, MatDoub &efbody, Doub xi, Doub eta, Doub w, MatDoub elcoords, MatDoub eldisplace);
+	void CacStiff(MatDoub &ek, MatDoub &efint, MatDoub &efbody, const MatDoub  &elcoords, MatDoub eldisplace);
+	void Assemble(MatDoub &KG, MatDoub &Fint,MatDoub &Fbody, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology);
 	void assembleBandN(MatDoub &B, MatDoub &N, const MatDoub &psis, const MatDoub &GradPhi);
 	void assembleConstitutiveMatrix(MatDoub &C, Doub mult);
 	void GetElCoords(vector<vector< vector<Doub > > > allcoords, Int el, MatDoub & elcoords);
@@ -59,6 +59,8 @@ public:
 	MatDoub fdisplace;
 	NRvector<TensorDoub> fepspvec, fepspsolitern;
 	Int fglobalcounter;
+
+ 
 
 
 };
