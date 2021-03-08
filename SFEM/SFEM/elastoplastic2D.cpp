@@ -43,6 +43,7 @@ template <class YC>
 void elastoplastic2D<YC>::SetMemory(Int nglobalpts, Int systemsize)
 {
 	fdisplace.assign(systemsize,1, 0.);
+ 
 	fepspvec.assign(nglobalpts, 0.);
 	fepspsolitern.assign(nglobalpts, 0.);
 	fglobalcounter = 0;
@@ -71,7 +72,7 @@ void elastoplastic2D<YC>::UpdateBodyForce(MatDoub newbodyforce)
 
 
 template <class YC>
-void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &ef, Doub xi, Doub eta, Doub w, MatDoub elcoords,MatDoub eldisplace)
+void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &efint, MatDoub &efbody, Doub xi, Doub eta, Doub w, MatDoub elcoords,MatDoub eldisplace)
 {
 	MatDoub psis, GradPsi, elcoordst, xycoords, Jac, InvJac(2, 2), GradPhi, B, BT, N, NT, psist, C, BC, BCS, stress(3, 1, 0.), temp, CS, KSt;
 	shapes(psis, GradPsi, xi, eta);
@@ -163,20 +164,20 @@ void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &ef, Doub xi, Doub eta
 	//ek.Print();
 	//ef = (Transpose[BB].stress) weight DetJ;
 	//ef2 = (Transpose[NShapes].{0, -bodyforce}) weight DetJ;
-	BT.Mult(stress, ef);
-	NT.Mult(fbodyforce, temp);
-	temp -= ef;
-	ef = temp;
-	ef *= w*DetJ;
+	BT.Mult(stress, efint);
+	NT.Mult(fbodyforce, efbody);
+	efint *= w*DetJ;
+	efbody *= w*DetJ;
 }
 template <class YC>
-void elastoplastic2D<YC>::CacStiff(MatDoub &ek, MatDoub &ef, const MatDoub  &elcoords,MatDoub eldisplace)
+void elastoplastic2D<YC>::CacStiff(MatDoub &ek, MatDoub &efint, MatDoub &efbody, const MatDoub  &elcoords,MatDoub eldisplace)
 {
-	MatDoub ptsweigths, ekt, eft;
+	MatDoub ptsweigths, ekt, eftint,eftbody;
 	Doub xi, eta, w;
 	Int nnodes = elcoords.nrows();
 	ek.assign(nnodes * 2, nnodes * 2, 0.);
-	ef.assign(nnodes * 2, 1, 0.);
+	efint.assign(nnodes * 2, 1, 0.);
+	efbody.assign(nnodes * 2, 1, 0.);
 	shapequad shape = shapequad(fOrder, 1);
 	shape.pointsandweigths(ptsweigths);
 	Int npts = ptsweigths.nrows();
@@ -187,22 +188,24 @@ void elastoplastic2D<YC>::CacStiff(MatDoub &ek, MatDoub &ef, const MatDoub  &elc
 		eta = ptsweigths[ipt][1];
 		w = ptsweigths[ipt][2];
 		//std::cout << "integration point :" << " xi = " << xi << "  eta = "<<  eta << std::endl;
-		Contribute(ekt, eft, xi, eta, w, elcoords, eldisplace);
+		Contribute(ekt, eftint, eftbody, xi, eta, w, elcoords, eldisplace);
 		ek += ekt;
-		ef += eft;
+		efint += eftint;
+		efbody += eftbody;
 	}
 }
 template <class YC>
-void elastoplastic2D<YC>::Assemble(MatDoub &KG, MatDoub &FG, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
+void elastoplastic2D<YC>::Assemble(MatDoub &KG, MatDoub &Fint, MatDoub &Fbody, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
 {
-	MatDoub ek, ef, elcoords, eltopology;
+	MatDoub ek, efint,efbody, elcoords, eltopology;
 	GetElCoords(allcoords, 0, elcoords);
 	Int nnodes = meshnodes.nrows();
 	Int rows = elcoords.nrows();
 	Int sz = 2 * nnodes;
 	Int cols = rows;
 	KG.assign(sz, sz, 0.);
-	FG.assign(sz, 1, 0.);
+	Fint.assign(sz, 1, 0.);
+	Fbody.assign(sz, 1, 0.);
 	Int nels = allcoords.size();
 	
 	//uglob = Table[
@@ -244,7 +247,7 @@ void elastoplastic2D<YC>::Assemble(MatDoub &KG, MatDoub &FG, const vector<vector
 		MatDoub elementdisplace(elcoords.nrows(), 2,0.);
 		for (Int i = 0;i < elcoords.nrows(); i++)for (Int j = 0;j < 2;j++)elementdisplace[i][j] = uglob[iel][i][j];
 		GetElCoords(allcoords, iel, elcoords );
-		CacStiff(ek, ef, elcoords, elementdisplace);
+		CacStiff(ek, efint,efbody, elcoords, elementdisplace);
 		for (Int irow = 0;irow < rows;irow++)
 		{
 			Int rowglob = meshtopology[iel][irow];
@@ -257,8 +260,11 @@ void elastoplastic2D<YC>::Assemble(MatDoub &KG, MatDoub &FG, const vector<vector
 				KG[2 * rowglob + 1 + fu][2 * colglob + 1 + fu] += ek[2 * irow + 1 + fu][2 * icol + 1 + fu];
 
 			}
-			FG[2 * rowglob + fu][0] += ef[2 * irow + fu][0];
-			FG[2 * rowglob + 1 + fu][0] += ef[2 * irow + 1 + fu][0];
+			Fbody[2 * rowglob + fu][0] += efbody[2 * irow + fu][0];
+			Fbody[2 * rowglob + 1 + fu][0] += efbody[2 * irow + 1 + fu][0];
+
+			Fint[2 * rowglob + fu][0] += efint[2 * irow + fu][0];
+			Fint[2 * rowglob + 1 + fu][0] += efint[2 * irow + 1 + fu][0];
 		}
 
 	}
