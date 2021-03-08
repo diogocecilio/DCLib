@@ -152,13 +152,22 @@ public:
 	void resize(int newn); // resize (contents not preserved)
 	void assign(int newn, const T &a); // resize and assign a constant val
 	void Print();
+	//void CopyFromMatrix(NRmatrix<T> & source);
 
 	~NRvector();
 };
 
-// NRvector definitions
-
-
+//// NRvector definitions
+//template <class T>
+//void NRvector<T>::CopyFromMatrix(NRmatrix<T> & source)
+//{
+//	int sz = source.nrwos();
+//	this->assign(sz, 0.);
+//	for (int i = 0;i < sz;i++)
+//	{
+//		v[i] = source[i][0];
+//	}
+//}
 
 
 template <class T>
@@ -306,11 +315,22 @@ public:
 	T NRmatrixNorm();
 	T Det();
 
+	void  CopyFromVecDoub(const  NRvector<T>&input);
+
 
 	//inline void CopyFromNRtensor(NRtensor<T> source);
 	
 	~NRmatrix();
 };
+template <class T>
+void  NRmatrix<T>::CopyFromVecDoub(const  NRvector<T>&input)
+{
+	this->assign(input.nrows(), 1, 0.);
+	for (int i = 0;i < this->nrows();i++)
+	{
+		v[i][0] = input[i];
+	}
+}
 
 template <class T>
 void  NRmatrix<T>::FromFullToVoigt(NRmatrix<T> & voigt)
