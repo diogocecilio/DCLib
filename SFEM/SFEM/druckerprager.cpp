@@ -123,8 +123,16 @@ Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
 	VecDoub initguess(1, 0.), tempguess(1, 0.);
 	initguess[0] = xitrial;
 
-	Funcstruct func;
+	//Funcstruct func;
+	//func.setpt(pt, fyoung, fnu, fcoesion, fphi);
+
+	Funcd func;
 	func.setpt(pt, fyoung, fnu, fcoesion, fphi);
+	xisol = rtsafe(func, -1.e12, 1.e12, 10e-6);
+	//xisol =  zbrent(func, -1.e12 , 1.e12 , 10e-6);
+	//xisol = zriddr(func, -1.e12, 1.e12, 10e-6);
+	//Doub iniguess = rtflsp(func, -1.e12, 1.e12, 10e-6);//nao funfa
+	//Doub iniguess = rtsec(func, -1.e12, 1.e12, 10e-6);//nao funfa
 
 		//Doub distxi = 10e12,distnew=10.e12;
 		//Doub delta = 2*fabs(xitrial);
@@ -148,7 +156,8 @@ Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
 
 		//Golden gold;
 		//Doub iniguess = gold.minimize(func);
-		xisol =  zbrent(func, -1.e12 , 1.e12 , 10e-6);
+		//xisol =  zbrent(func, -1.e12 , 1.e12 , 10e-6);
+		//xisol = zriddr(func, -1.e12, 1.e12, 10e-6);
 		//Doub iniguess = rtflsp(func, -1.e12, 1.e12, 10e-6);//nao funfa
 		//Doub iniguess = rtsec(func, -1.e12, 1.e12, 10e-6);//nao funfa
 		//cout << "****" << endl;
@@ -158,11 +167,11 @@ Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
 		//Frprmn<Funcstruct> frprmn(func, tol);
 		//VecDoub xisolvec = frprmn.minimize(initguess);
 		//xisol = xisolvec[0];
-		initguess[0] = xisol;
-		Doub tol = 1.e-8;
-		Powell<Funcstruct> powell(func, tol);
-		VecDoub xisolvec = powell.minimize(initguess);
-		xisol = xisolvec[0];
+		//initguess[0] = xisol;
+		//Doub tol = 1.e-8;
+		//Powell<Funcstruct> powell(func, tol);
+		//VecDoub xisolvec = powell.minimize(initguess);
+		//xisol = xisolvec[0];
 		//cout << "xisol = " << xisol << endl;
 		//if (frprmn.iter > 100)
 		//{
