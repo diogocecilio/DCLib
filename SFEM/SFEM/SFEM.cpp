@@ -374,10 +374,13 @@ void IterativeSlopeStability()
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
 	vector<vector<vector<Doub>>> allcoords;
-	string  elsstr = "els-grossa.txt";
-	string nodestr = "nodes-grossa.txt";
-	//string  elsstr = "mesh-talude-els.txt";
-	//string nodestr = "mesh-talude-nodes.txt";
+	//string  elsstr = "els-grossa-very.txt";
+	//string nodestr = "nodes-grossa-very.txt";
+	string  elsstr = "mesh-talude-els.txt";
+	string nodestr = "mesh-talude-nodes.txt";
+	//string nodestr = "mesh-talude-nodes-goodmesh.txt";
+	//string elsstr = "mesh-talude-els-goodmesh.txt";
+	
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
 
 	std::ofstream filemesh1("meshcoords.txt");
@@ -425,10 +428,10 @@ void IterativeSlopeStability()
 	b[0] = 35.;b[1] = 40.;
 	gridmesh::Line(a, b, ndivs, pathdisplace);
 	gridmesh::FindIdsInPath(pathdisplace, allcoords, meshtopology, iddisplace);
-	//cout << "IDS iddisplace " << endl;
-	//for (Int i = 0;i < iddisplace.size();i++)cout << iddisplace[i] << endl;
+	cout << "IDS iddisplace " << endl;
+	for (Int i = 0;i < iddisplace.size();i++)cout << iddisplace[i] << endl;
 	Int sz = 2 * meshcoords.nrows();
-	MatDoub KG(sz, sz, 0.), FG(sz, 1, 0.), ptsweigths;
+	MatDoub KG(sz, sz, 0.), FBODY(sz, 1, 0.),FINT(sz, 1, 0.), ptsweigths;
 
 	int order = 2;
 	shapequad shape = shapequad(order, 1);
@@ -442,36 +445,39 @@ void IterativeSlopeStability()
 	elastoplastic2D< druckerprager > *  material = new elastoplastic2D< druckerprager >(thickness, bodyforce, planestress, order);
 	material->fYC.setup(young, nu, c,phi);
 	material->SetMemory(nglobalpts, sz);
-
-	Doub fac[] = { 2., 2.135, 2.27, 2.405, 2.54, 2.675, 2.81, 2.945, 3.08, 3.215, 3.35, 
-		3.485, 3.62, 3.755, 3.89, 4.025, 4.16, 4.295, 4.43, 4.565, 4.7 };
-
-
-
-	Int steps = 21;
-	Int counterout = 1;
-	MatDoub solpost(steps, 2, 0.);
-	for (Int iload = 0; iload < steps; iload++)
+	material->UpdateBodyForce(bodyforce);
+	vector<double>  fac = {0.1,1., 2., 2.135, 2.27, 2.405, 2.54, 2.675, 2.81, 2.945, 3.08, 3.215, 3.35,
+		3.485, 3.62, 3.755, 3.9, 4.1, 4.2, 4.3,4.4,4.5,4.525,4.55,4.56,4.57,4.58,4.59,4.6,4.62};
+	Doub l = 5, lamb = 1.,lambn,diff=100;
+	Int steps = fac.size();
+	Int counterout = 0;
+	MatDoub solpost(1000, 2, 0.);
+	while (counterout < 20 && fabs(diff)> 1.e-2)
 	{
-		std::cout << "load step = " << iload << std::endl;
-		Int counter = 0, maxcount = 30;
-		Doub err1 = 10., err2 = 10., tol = 10e-3;
-		MatDoub dw(sz, 1, 0.), res(sz, 1, 0.), FINT, R;
+		std::cout << "load step = " << counterout << std::endl;
+		Int counter = 0, maxcount = 300;
+		Doub err1 = 10., err2 = 10., tol = 10e-6;
+		MatDoub dws(sz, 1, 0.),dwb(sz,1,0.), dww(sz, 1, 0.),   R;
+		lambn = lamb;
+		//lamb = 1.;
+		Doub dlamb = 0.;
+		MatDoub dw(sz, 1, 0.);
 		while (counter <  maxcount && err1 > tol)
 		{
+			
+			//newbodyforce = bodyforce;
+			//newbodyforce *= lamb;
+			//material->UpdateBodyForce(newbodyforce);
 
-			newbodyforce = bodyforce;
-			newbodyforce *= fac[iload];
-			material->UpdateBodyForce(newbodyforce);
-			MatDoub FGint = FG;
-			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+			material->Assemble(KG, FINT, FBODY,allcoords, meshcoords, meshtopology);
+
+
 	
-
-
-			R = FINT;
-
-			//R.Print();
-
+			R = FBODY;
+			R *= lamb;
+			R -= FINT;
+			
+			//FBODY *= 1. / lamb;
 			Int dir, val;
 			dir = 1;
 			val = 0;
@@ -483,36 +489,105 @@ void IterativeSlopeStability()
 			val = 0;
 			material->DirichletBC(KG, R, idsleft, dir, val);
 
+			dir = 1;
+			val = 0;
+			material->DirichletBC(KG, FBODY, idsbottom, dir, val);
+			dir = 0;
+			val = 0;
+			material->DirichletBC(KG, FBODY, idsright, dir, val);
+			dir = 0;
+			val = 0;
+			material->DirichletBC(KG, FBODY, idsleft, dir, val);
+
 			MatDoub invKG, sol;
 			Cholesky * chol = new Cholesky(KG);
-			chol->inverse(invKG);
+			VecDoub x(sz,0.), b(sz,0.);
+			for (int i = 0;i < sz;i++)b[i] = R[i][0];
+			chol->solve(b, x);
 			if (chol->fail)
 			{
 				LUdcmp *lu = new LUdcmp(KG);
-				chol->inverse(invKG);
+				lu->solve(b, x);
 			}
 
-			//LUdcmp * LU = new LUdcmp(KG);
-			//LU->inverse(invKG);
+			for (int i = 0;i < sz;i++)dws[i][0] = x[i];
 
-			invKG.Mult(R, dw);
+			x.assign(sz, 0.);
+			b.assign(sz, 0.);
+			for (int i = 0;i < sz;i++)b[i] = FBODY[i][0];
+			chol->solve(b, x);
+			if (chol->fail)
+			{
+				LUdcmp *lu = new LUdcmp(KG);
+				lu->solve(b, x);
+			}
+			for (int i = 0;i < sz;i++)dwb[i][0] = x[i];
+
+
+			Doub aa=0.;
+			for (int i = 0;i < sz;i++)aa += dwb[i][0] * dwb[i][0];
+
+		//	dws.Print();
+
+			Doub bb=0.;
+			MatDoub dwcopy = dw;
+			dwcopy += dws;
+			for (int i = 0;i < sz;i++)bb += dwb[i][0] * dwcopy[i][0];
+			bb *= 2;
+			//bb = 2 (dw + dws).dwb;
+
+			Doub cc = 0.;
+			for (int i = 0;i < sz;i++)cc += dwcopy[i][0] * dwcopy[i][0];
+			cc -= l*l;
+			//ccc = (dw + dws).(dw + dws) - l ^ 2;
+			Doub delta = bb*bb - 4.*aa*cc;
+			dlamb = (-bb + sqrt(delta)) / (2. * aa);
+		//	cout << "a = " << aa << endl;
+		//	cout << "b = " << bb << endl;
+		//	cout << "c = " << cc << endl;
+		//	cout <<"dlamb = " <<dlamb << endl;
+			//dws.Print();
+			dww = dwb;
+			dww *= dlamb;
+			dww += dws;
+			dw += dww;
+		//	cout << "  dlam = " << dlamb << endl;
+			//cout << "  b lamb = " << lamb << endl;
+			lamb += dlamb;
+		//	cout << " a lamb = " << lamb << endl;
+
+			
+
+
+			//dww = dws + dlamb dwb;
+			//dw += dww;
+			//lamb += dlamb;
+			//res = Norm[dww];
+			//displace += dww;
+
 			//dw.Print();
-			displace += dw;
+			displace += dww;
+			//displace.Print();
 			material->UpdateDisplacement(displace);
 			Doub rnorm = 0., normdw = 0., normfg = 0., unorm = 0.;
 			rnorm = R.NRmatrixNorm();
-			normdw = dw.NRmatrixNorm();
+			normdw = dww.NRmatrixNorm();
 			unorm = displace.NRmatrixNorm();
-			err1 = rnorm;
+			FBODY *= lamb;
+
+			err1 = rnorm / FBODY.NRmatrixNorm();
 			err2 = normdw / unorm;
-			std::cout << " Iteration number = " << counter << " |  |R| = " << rnorm <<" | Unrom  = " << unorm  << " | deltau/u " << err2 << std::endl;
+			//if (fabs(dlamb) > 0.1)err1 = 10;
+
+			std::cout << " Iteration number = " << counter << " |  |R|/FE = " << err1 <<" |  |R| = " << rnorm <<" | Unrom  = " << unorm << " | lamb  = " << lamb  << " |  dlamb "<< dlamb <<std::endl;
 			counter++;
 		}
-
+		diff = lamb - lambn;
+		cout << "diff = " << diff <<endl ;
 		material->UpdatePlasticStrain();
+		solpost[counterout][0] = fabs(displace[2 * iddisplace[0]+1][0]);
+		solpost[counterout][1] = fabs(lamb*bodyforce[1][0]/20.);
 		counterout++;
-		solpost[iload][0] = fabs(displace[2 * iddisplace[0]][0]);
-		solpost[iload][1] = fabs(newbodyforce[1][0]/20.);
 
 	}
 
@@ -624,17 +699,17 @@ void IterativeProcessPressure()
 
 	Int steps = 5;
 	Int counterout = 1;
-	MatDoub solpost(steps, 2, 0.);
+	MatDoub solpost(1000, 2, 0.);
 	for (Int iload = 0; iload < steps; iload++)
 	{
 		std::cout << "load step = " << iload << std::endl;
 		Int counter = 0, maxcount = 30;
 		Doub err1 = 10., err2 = 10., tol = 10.e-5;
-		MatDoub dw(sz, 1, 0.), res(sz, 1, 0.), FINT, R;
+		MatDoub dw(sz, 1, 0.), res(sz, 1, 0.), FINT,FBODY, R;
 		while (counter <  maxcount && err1 > tol)
 		{
 			MatDoub FGint = FG;
-			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+			material->Assemble(KG, FINT, FBODY, allcoords, meshcoords, meshtopology);
 
 			//KG.Print();
 			//FINT.Print();
@@ -790,11 +865,11 @@ void IterativeProcess()
 		std::cout << "load step = " << iload << std::endl;
 		Int counter = 0, maxcount = 30;
 		Doub err1=10., err2=10., tol=10.e-5;
-		MatDoub dw(sz, 1, 0.),res(sz,1,0.), FINT,R;
+		MatDoub dw(sz, 1, 0.),res(sz,1,0.), FINT,FBODY,R;
 		while (counter <  maxcount && err1 > tol)
 		{
 			MatDoub FGint = FG;
-			material->Assemble(KG, FINT, allcoords, meshcoords, meshtopology);
+			material->Assemble(KG, FINT, FBODY, allcoords, meshcoords, meshtopology);
 
 			//KG.Print();
 			//FINT.Print();
