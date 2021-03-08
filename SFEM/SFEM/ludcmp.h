@@ -25,7 +25,7 @@ struct LUdcmp
 			big = 0.0;
 			for (j = 0;j<n;j++)
 				if ((temp = abs(lu[i][j])) > big) big = temp;
-			if (fabs(big) < 10e-8) throw("Singular matrix in LUdcmp");
+			if (fabs(big) < 10e-12) throw("Singular matrix in LUdcmp");
 			vv[i] = 1.0 / big;
 		}
 		for (k = 0;k<n;k++) {
