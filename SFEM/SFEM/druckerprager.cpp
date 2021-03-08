@@ -67,7 +67,7 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 		MatDoub nvec;
 		MatDoub fulltensorproj = stressrecosntruction(sig, vec);
 		MatDoub Q = ComputeQ(fulltensorproj, tempepsemat, projstress, projstrain, projgamma,nvec);
-		Doub checkdet = 0.001;
+		Doub checkdet = 1.e-8;
 		Doub detQ= fabs(Q.Det());
 
 		if (detQ < checkdet )
@@ -80,15 +80,16 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 			fflag = true;
 		}
 		else {
+		//	cout << "detQ = " << detQ << endl;
 		//	Q.Print();
 			MatDoub invQ,R;
-			Cholesky *chol = new Cholesky(Q);
-			chol->inverse(invQ);
-			if (chol->fail)
-			{
+			//Cholesky *chol = new Cholesky(Q);
+			//chol->inverse(invQ);
+			//if (chol->fail)
+			//{
 				LUdcmp *lu = new LUdcmp(Q);
 				lu->inverse(invQ);
-			}
+			//}
 
 			invQ.Mult(C, R);
 			Dept = R;
@@ -125,42 +126,51 @@ Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
 	Funcstruct func;
 	func.setpt(pt, fyoung, fnu, fcoesion, fphi);
 
-	if (true) {
-		Doub distxi = 10e12;
-		Doub delta = fabs(xitrial)*100.;
-		Doub steps = 10.;
-		for (Doub xiguess = -delta; xiguess <= delta; xiguess += 2 *delta / steps) {
-			//cout << "xiguess = " << xiguess << endl;
-			tempguess[0] = xiguess;
-			Doub distnew = func.operator()(tempguess);
-			if (fabs(distnew) < fabs(distxi)) {
-				initguess[0] = tempguess[0];
-				distxi = distnew;
-				//cout << "distnew = " << distnew << endl;
-				//cout << "initguess = " << initguess[0] << endl;
-			}
+		//Doub distxi = 10e12,distnew=10.e12;
+		//Doub delta = 2*fabs(xitrial);
+		//Doub steps = 100.;
+		//Doub x2 = 0.;
+		//for (Doub xiguess = -delta; xiguess <= fabs(delta); xiguess +=  2*fabs(delta) / steps) {
+		//	tempguess[0] = xiguess;
+		//	distxi = distnew;
+		//	distnew = func.operator()(tempguess);
+		//	if (fabs(distnew) < fabs(distxi))
+		//	{
+		//		initguess[0] = tempguess[0];
+		//	}
+		//	
+		//	//cout << "xiguess = " << xiguess  <<" |distnew = " << distnew << endl;
 
-		}
+		//}
+		//cout << "initguess[0] = " << initguess[0] << endl;
+		
+		//rtbis(T &func, const Doub x1, const Doub x2, const Doub xacc)
+
+		//Golden gold;
+		//Doub iniguess = gold.minimize(func);
+		xisol =  zbrent(func, -1.e12 , 1.e12 , 10e-6);
+		//Doub iniguess = rtflsp(func, -1.e12, 1.e12, 10e-6);//nao funfa
+		//Doub iniguess = rtsec(func, -1.e12, 1.e12, 10e-6);//nao funfa
+		//cout << "****" << endl;
+		//cout << "iniguess = " << iniguess << endl;
+		//initguess[0] = iniguess;
 		//Doub tol = 1.e-8;
 		//Frprmn<Funcstruct> frprmn(func, tol);
 		//VecDoub xisolvec = frprmn.minimize(initguess);
 		//xisol = xisolvec[0];
-
-		Powell<Funcstruct> powell(func, 1.e-5);
-		VecDoub xisolvec = powell.minimize(xisolvec);
+		initguess[0] = xisol;
+		Doub tol = 1.e-8;
+		Powell<Funcstruct> powell(func, tol);
+		VecDoub xisolvec = powell.minimize(initguess);
 		xisol = xisolvec[0];
-
-	}
-	else {
-
-		 Doub tol = 1.e-8;
-		 Frprmn<Funcstruct> frprmn(func, tol);
-		 VecDoub xisolvec = frprmn.minimize(initguess);
-		 xisol = xisolvec[0];
-
-		 Powell<Funcstruct> powell(func, tol);
-		 xisolvec = powell.minimize(xisolvec);
-	}
+		//cout << "xisol = " << xisol << endl;
+		//if (frprmn.iter > 100)
+		//{
+		//	xisolvec[0] = 0.;
+		//	Frprmn<Funcstruct> frprmn(func, tol);
+		//	VecDoub xisolvec = frprmn.minimize(initguess);
+		//	xisol = xisolvec[0];
+		//}
 
 	return xisol;
 }
