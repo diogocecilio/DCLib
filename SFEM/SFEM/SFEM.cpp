@@ -103,17 +103,17 @@ Doub func2d(VecDoub_I &x)
 }
 
 
-struct Funcd {
-	Doub operator() (VecDoub_I &x)
-	{
-		return (x[0] * x[0] + x[1] * x[1] - 16)*(x[0] * x[0] + x[1] * x[1] - 16);
-	}
-	void df(VecDoub_I &x, VecDoub_O &deriv) 
-	{
-		deriv[0] = 4 * x[0] * (-16 + pow(x[0], 2) + pow(x[1], 2));
-		deriv[1] = 4 * x[1] * (-16 + pow(x[0], 2) + pow(x[1], 2));
-	}
-};
+//struct Funcd {
+//	Doub operator() (VecDoub_I &x)
+//	{
+//		return (x[0] * x[0] + x[1] * x[1] - 16)*(x[0] * x[0] + x[1] * x[1] - 16);
+//	}
+//	void df(VecDoub_I &x, VecDoub_O &deriv) 
+//	{
+//		deriv[0] = 4 * x[0] * (-16 + pow(x[0], 2) + pow(x[1], 2));
+//		deriv[1] = 4 * x[1] * (-16 + pow(x[0], 2) + pow(x[1], 2));
+//	}
+//};
 
 struct Funcd2 {
 
