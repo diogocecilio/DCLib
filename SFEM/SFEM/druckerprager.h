@@ -49,12 +49,33 @@ public:
 		fb = fa*ftanphi;
 
 	}
+
+	inline void updateatributes(NRvector<MatDoub> mult)
+	{
+		fyoung0= fyoung;
+		fnu0 = fnu;
+		fcoesion0 = fcoesion;
+		fphi0 = fphi;
+		//Doub newyoung = fyoung + mult*fyoung;
+		Doub newcoesion = fcoesion + mult[0][0][0]*fcoesion;
+		Doub newphi = fphi + mult[1][0][0] * fphi;
+		setup(fyoung, fnu, newcoesion, newphi);
+	}
+	inline void restoreoriginalatributes()
+	{
+		setup(fyoung0, fnu0, fcoesion0, fphi0);
+	}
+	 Doub fyoung0;
 	 Doub fyoung;
 	 Doub fnu;
+	 Doub fnu0;
 
 private:
 	Doub fcoesion;
 	Doub fphi;
+	Doub fcoesion0;
+	Doub fphi0;
+
 	Doub fK;
 	Doub fG;
 	Doub ftanphi;
@@ -144,6 +165,16 @@ struct Funcstruct:druckerprager {
 		fK = young / (3.* (1. - 2.* nu));
 		ftanphi = (3.*tan(fphi)) / sqrt(9. + 12.* tan(fphi) *tan(fphi));
 		fapex = fcoesion * 1. / tan(fphi);
+
+
+		//fa= (3.*tan(fphi)) / sqrt(9. + 12.* tan(fphi) *tan(fphi));
+		//fb = (3.) / sqrt(9. + 12.* tan(fphi) *tan(fphi));
+		//fa = (6.*sin(fphi)) / ( sqrt(3.)*(3 + sin(fphi)) );
+		//fb = (6.*cos(fphi)) / (sqrt(3.)*(3 + sin(fphi)));
+
+		//fa = (6.*sin(fphi)) / (sqrt(3.)*(3 - sin(fphi)));
+		//fb = (6.*cos(fphi)) / (sqrt(3.)*(3 - sin(fphi)));
+
 		fa = (fcoesion / (sqrt(3)*tan(fphi)) - fapex);
 		fb = fa*ftanphi;
 
@@ -216,6 +247,7 @@ struct Funcd :druckerprager {
 		fb = fa*ftanphi;
 
 	}
+
 };
 
 

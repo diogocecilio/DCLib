@@ -195,7 +195,7 @@ Doub KLGalerkinRF::AutocorrelationFunc(MatDoub  x1, MatDoub  x2)
 	return val;
 }
 
-void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, MatDoub & HHAT)
+void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, NRmatrix<MatDoub>  & HHAT)
 {
 	std::clock_t start;
 	double duration;
@@ -314,18 +314,27 @@ void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > 
 	std::normal_distribution<Doub> distribution(0., 1.);
 
 	Int nsamples = fsamples;
-	MatDoub THETA(M, nsamples, 0.);
-
+	MatDoub THETA(M, nsamples, 0.),THETA2(M, nsamples, 0.);
+	Doub correlation = -0.5;
 	for (int n = 0; n <nsamples; n++)
 	{
 		for (Int iexp = 0;iexp < M; iexp++)
 		{
-			Doub number = distribution(generator);
-			THETA[iexp][n] = number;
+			Doub xic = distribution(generator);
+			Doub xiphi = distribution(generator);
+			THETA[iexp][n] = xic;
+			THETA2[iexp][n] =  xic* correlation + xiphi*sqrt(1- correlation*correlation);
 		}
 	}
 
-	PHIt.Mult(THETA, HHAT);
+	MatDoub hhatphi, hhatcoes;
+
+	PHIt.Mult(THETA, hhatcoes);
+	PHIt.Mult(THETA2, hhatphi);
+
+	HHAT.resize(2, 1);
+	HHAT[0][0] = hhatcoes;
+	HHAT[1][0] = hhatphi;
 
 
 

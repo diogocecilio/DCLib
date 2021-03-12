@@ -13,9 +13,18 @@ elastoplastic2D<YC>::elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickn
 }
 
 template <class YC>
-elastoplastic2D<YC>::elastoplastic2D(Doub thickness, MatDoub bodyforce, Int planestress, Int order) : shapequad(order, 1)
+elastoplastic2D<YC>::elastoplastic2D(Doub thickness, MatDoub bodyforce, Int planestress, Int order , MatDoub  HHAT) : shapequad(order, 1)
 {
 
+	fbodyforce = bodyforce;
+	fplanestress = planestress;
+	fthickness = thickness;
+	fOrder = order;
+	fHHAT = HHAT;
+}
+template <class YC>
+elastoplastic2D<YC>::elastoplastic2D(Doub thickness, MatDoub bodyforce, Int planestress, Int order) : shapequad(order, 1)
+{
 	fbodyforce = bodyforce;
 	fplanestress = planestress;
 	fthickness = thickness;
@@ -53,7 +62,6 @@ void elastoplastic2D<YC>::SetMemory(Int nglobalpts, Int systemsize)
 template <class YC>
 void elastoplastic2D<YC>::UpdateDisplacement(MatDoub displace)
 {
-
 	fdisplace = displace;
 }
 template <class YC>
@@ -70,6 +78,45 @@ void elastoplastic2D<YC>::UpdateBodyForce(MatDoub newbodyforce)
 	fbodyforce = newbodyforce;
 }
 
+template <class YC>
+void elastoplastic2D<YC>::ResetPlasticStrain()
+{
+
+	
+	//NRvector<TensorDoub> fepspvec, fepspsolitern;
+	Int rows = fepspvec.size();
+	for (Int i = 0;i < rows;i++)
+	{
+		for (Int j = 0;j < 6;j++)
+		{
+			fepspvec[i].XX() = 0. ;
+			fepspvec[i].YY() = 0. ;
+			fepspvec[i].ZZ() = 0. ;
+			fepspvec[i].XZ() = 0. ;
+			fepspvec[i].YZ() = 0. ;
+			fepspvec[i].XY() = 0. ;
+
+			fepspsolitern[i].XX() = 0.;
+			fepspsolitern[i].YY() = 0.;
+			fepspsolitern[i].ZZ() = 0.;
+			fepspsolitern[i].XZ() = 0.;
+			fepspsolitern[i].YZ() = 0.;
+			fepspsolitern[i].XY() = 0.;
+		}
+	}
+
+}
+template <class YC>
+void elastoplastic2D<YC>::ResetDisplacement()
+{
+	Int rows = fdisplace.nrows();
+	fdisplace.assign(rows, 1,0.);
+}
+
+//
+//
+
+
 
 template <class YC>
 void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &efint, MatDoub &efbody, Doub xi, Doub eta, Doub w, MatDoub elcoords,MatDoub eldisplace)
@@ -78,10 +125,15 @@ void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &efint, MatDoub &efbod
 	shapes(psis, GradPsi, xi, eta);
 	psis.Transpose(psist);
 	psist.Mult(elcoords, xycoords);
-	MatDoub hhat;
-	if (fhhatvel.nrows() != 0)
+	NRvector<MatDoub> hhat(fhhatvel.size());
+
+	if (fhhatvel.size() != 0)
 	{
-		psist.Mult(fhhatvel, hhat);
+		for (Int ivar = 0;ivar < fhhatvel.size();ivar++)
+		{
+			psist.Mult(fhhatvel[ivar], hhat[ivar]);
+		}
+		
 	}
 	GradPsi.Mult(elcoords, Jac);
 	Int nnodes = psis.nrows();
@@ -125,11 +177,22 @@ void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &efint, MatDoub &efbod
 	//epst.Print();
 	//std::cout << "epsp = " << std::endl;
 	//epsp.Print();
+
+	if (fhhatvel.size() != 0)
+	{
+		for (Int ivar = 0;ivar < fhhatvel.size();ivar++)
+		{
+			psist.Mult(fhhatvel[ivar], hhat[ivar]);
+		}
+		fYC.updateatributes(hhat);
+	}
+	//cout << "E  = " << fYC.fyoung <<endl;
+
 	fYC.closestpointproj(epst,epsp,projstress,projstrain,Dep,projgamma);
-
-	//std::cout << "projstress = " << std::endl;
-	//projstress.Print();
-
+	if (fhhatvel.size() != 0)
+	{
+		fYC.restoreoriginalatributes();
+	}
 	//epspeint = epst - (epse);
 	epspeint = epst;
 	epspeint = epspeint - projstrain;
@@ -147,16 +210,7 @@ void elastoplastic2D<YC>::Contribute(MatDoub &ek, MatDoub &efint, MatDoub &efbod
 	BT.Mult(Dep, BC);
 	BC.Mult(B, ek);
 
-	if (fhhatvel.nrows() != 0)
-	{
-		Doub mult = hhat[0][0];
-		BT.Mult(Dep, BCS);
-		BCS.Mult(B, KSt);
-		ek += KSt;
-	}
-	else {
 
-	}
 	stress[0][0] = projstress.XX();stress[1][0] = projstress.YY();stress[2][0] = projstress.XY();
 	ek *= w*DetJ*fthickness;
 	//std::cout << " stress "<< std::endl;
@@ -238,10 +292,13 @@ void elastoplastic2D<YC>::Assemble(MatDoub &KG, MatDoub &Fint, MatDoub &Fbody, c
 	{
 		if (fHHAT.nrows() != 0)
 		{
-			fhhatvel.assign(rows, 1, 0.);
-			for (Int inode = 0;inode < rows;inode++)
-			{
-				fhhatvel[inode][0] = fHHAT[meshtopology[iel][inode]][0];
+			fhhatvel.resize( fHHAT.ncols());
+			for (Int ivar = 0;ivar < fHHAT.ncols();ivar++) {
+				fhhatvel[ivar].assign(rows, 1, 0.);
+				for (Int inode = 0;inode < rows;inode++)
+				{
+					fhhatvel[ivar][inode][0] = fHHAT[meshtopology[iel][inode]][ivar];
+				}
 			}
 		}
 		MatDoub elementdisplace(elcoords.nrows(), 2,0.);
@@ -508,7 +565,7 @@ void elastoplastic2D<YC>::PostProcess(const vector<vector< vector<Doub > > > &al
 	}
 }
 template <class YC>
-void elastoplastic2D<YC>::PostProcess(const vector<vector< vector<Doub > > > &allcoords, const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol)
+void elastoplastic2D<YC>::PostProcess(Int var,const vector<vector< vector<Doub > > > &allcoords, const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol)
 {
 	MatDoub elcoords, eltopology, psis, gradpsis, xycoords, psist;
 	GetElCoords(allcoords, 0, elcoords);
@@ -533,7 +590,7 @@ void elastoplastic2D<YC>::PostProcess(const vector<vector< vector<Doub > > > &al
 				soli[1] = xycoords[0][1];
 				for (Int inode = 0;inode < elcoords.nrows();inode++)
 				{
-					approx += psis[inode][0] * nodalsol[meshtopology[iel][inode]][0];
+					approx += psis[inode][0] * nodalsol[meshtopology[iel][inode]][var];
 				}
 				soli[2] = approx;
 				sol.push_back(soli);

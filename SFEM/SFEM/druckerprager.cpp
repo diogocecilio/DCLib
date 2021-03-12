@@ -70,7 +70,8 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 		Doub checkdet = 1.e-8;
 		Doub detQ= fabs(Q.Det());
 
-		if (detQ < checkdet )
+		//if (detQ < checkdet )
+		if (detQ < checkdet)
 		{
 			Dept = C;
 			Dep.assign(3, 3, 0.);
@@ -120,67 +121,9 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
 {
 	Doub xisol;
-	VecDoub initguess(1, 0.), tempguess(1, 0.);
-	initguess[0] = xitrial;
-
-	//Funcstruct func;
-	//func.setpt(pt, fyoung, fnu, fcoesion, fphi);
-
 	Funcd func;
 	func.setpt(pt, fyoung, fnu, fcoesion, fphi);
-	xisol = rtsafe(func, -1.e12, 1.e12, 10e-6);
-	//xisol =  zbrent(func, -1.e12 , 1.e12 , 10e-6);
-	//xisol = zriddr(func, -1.e12, 1.e12, 10e-6);
-	//Doub iniguess = rtflsp(func, -1.e12, 1.e12, 10e-6);//nao funfa
-	//Doub iniguess = rtsec(func, -1.e12, 1.e12, 10e-6);//nao funfa
-
-		//Doub distxi = 10e12,distnew=10.e12;
-		//Doub delta = 2*fabs(xitrial);
-		//Doub steps = 100.;
-		//Doub x2 = 0.;
-		//for (Doub xiguess = -delta; xiguess <= fabs(delta); xiguess +=  2*fabs(delta) / steps) {
-		//	tempguess[0] = xiguess;
-		//	distxi = distnew;
-		//	distnew = func.operator()(tempguess);
-		//	if (fabs(distnew) < fabs(distxi))
-		//	{
-		//		initguess[0] = tempguess[0];
-		//	}
-		//	
-		//	//cout << "xiguess = " << xiguess  <<" |distnew = " << distnew << endl;
-
-		//}
-		//cout << "initguess[0] = " << initguess[0] << endl;
-		
-		//rtbis(T &func, const Doub x1, const Doub x2, const Doub xacc)
-
-		//Golden gold;
-		//Doub iniguess = gold.minimize(func);
-		//xisol =  zbrent(func, -1.e12 , 1.e12 , 10e-6);
-		//xisol = zriddr(func, -1.e12, 1.e12, 10e-6);
-		//Doub iniguess = rtflsp(func, -1.e12, 1.e12, 10e-6);//nao funfa
-		//Doub iniguess = rtsec(func, -1.e12, 1.e12, 10e-6);//nao funfa
-		//cout << "****" << endl;
-		//cout << "iniguess = " << iniguess << endl;
-		//initguess[0] = iniguess;
-		//Doub tol = 1.e-8;
-		//Frprmn<Funcstruct> frprmn(func, tol);
-		//VecDoub xisolvec = frprmn.minimize(initguess);
-		//xisol = xisolvec[0];
-		//initguess[0] = xisol;
-		//Doub tol = 1.e-8;
-		//Powell<Funcstruct> powell(func, tol);
-		//VecDoub xisolvec = powell.minimize(initguess);
-		//xisol = xisolvec[0];
-		//cout << "xisol = " << xisol << endl;
-		//if (frprmn.iter > 100)
-		//{
-		//	xisolvec[0] = 0.;
-		//	Frprmn<Funcstruct> frprmn(func, tol);
-		//	VecDoub xisolvec = frprmn.minimize(initguess);
-		//	xisol = xisolvec[0];
-		//}
-
+	xisol = rtsafe(func, -10.e12, 10.e12, 10e-5);
 	return xisol;
 }
 

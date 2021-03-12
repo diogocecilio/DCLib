@@ -6,7 +6,8 @@
 template <class YC>
 class elastoplastic2D : shapequad{
 public:
-	elastoplastic2D( Doub thickness, MatDoub bodyforce, Int planestress, Int order);
+	elastoplastic2D( Doub thickness, MatDoub bodyforce, Int planestress, Int order, MatDoub  HHAT);
+	elastoplastic2D(Doub thickness, MatDoub bodyforce, Int planestress, Int order);
 	elastoplastic2D(Doub young, Doub nu, Doub sigy, Doub thickness, MatDoub bodyforce, Int planestress, Int order, MatDoub  HHAT);
 	elastoplastic2D(elastoplastic2D & copy);
 	elastoplastic2D();
@@ -29,7 +30,7 @@ public:
 	void SolPt(const vector<vector< vector<Doub > > > &allcoords,const MatInt &meshtopology, const Int &el, const  MatDoub &solG, const Doub &xi, const Doub &eta, MatDoub &xycoords, MatDoub &sol);
 //
 	void PostProcess(const vector<vector< vector<Doub > > > &allcoords,const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &solx, vector<vector<double>> &soly);
-    void PostProcess(const vector<vector< vector<Doub > > > &allcoords,const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol);
+    void PostProcess(Int var, const vector<vector< vector<Doub > > > &allcoords,const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol);
 
 	void PostProcessIntegrationPointVar(const vector<vector< vector<Doub > > > &allcoords, const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol);
 
@@ -39,6 +40,8 @@ public:
 	void UpdateDisplacement(MatDoub displace);
 	void UpdatePlasticStrain();
 	void UpdateBodyForce(MatDoub newbodyforce);
+	void ResetPlasticStrain();
+	void ResetDisplacement();
 
 //
 //
@@ -53,7 +56,7 @@ private:
 
 public:
 	MatDoub fHHAT;
-	MatDoub fhhatvel;
+	NRvector<MatDoub> fhhatvel;
 	YC fYC;
 
 	MatDoub fdisplace;

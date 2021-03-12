@@ -26,7 +26,7 @@ public:
 	void CacStiffC(MatDoub &CE, const MatDoub  &elcoords1, const MatDoub  &elcoords2);
 	void AssembleC(MatDoub &C, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology);
 
-	void SolveGenEigValProblem(const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, MatDoub & HHAT);
+	void SolveGenEigValProblem(const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, NRmatrix<MatDoub> & HHAT);
 
 	Doub AutocorrelationFunc(MatDoub  x1, MatDoub  x2);
 
