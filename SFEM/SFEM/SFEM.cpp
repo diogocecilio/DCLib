@@ -17,6 +17,9 @@
 #include <cmath>
 #include "mins_ndim.h"
 
+//#include <boost/filesystem.hpp>
+
+
 using namespace std;
 
 Doub beamproblem(Int nx, Int ny, Int order);
@@ -208,12 +211,18 @@ Doub Func::operator()(VecDoub_I &x)
 
 void MonteCarloTalude();
 
+//#include <boost/filesystem.hpp>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
 
 int main()
 {
 
-
-
+	
+	//boost::filesystem::create_directories("/tmp/a/b/c");
 	////string nodestr = "nodes-mais-fina.txt";
 	////string elsstr = "elements-mais-fina.txt";
 	////string nodestr = "nodes-fina.txt";
@@ -267,7 +276,7 @@ int main()
 	vector<vector<double>>  sol = IterativeSlopeStabilityNew(allcoords, meshcoords, meshtopology, hhatinho, material);//x = desloc y = loadfactor
 
 
-	//MonteCarloTalude();
+	////MonteCarloTalude();
 	MonteCarloTalude2();
 
 	
@@ -322,24 +331,28 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
 	//Doub l = 10., lamb = 1., lambn=0, lamb3, diff = 100;
-	Doub l =2, lamb = 0.1, lambn = 0, lamb3, diff = 100;
+	Doub l =1., lamb =1.3, lambn = 0, lamb3, diff = 100,diff2=100;
 	Int counterout = 0;
 	vector<double> solcount(2, 0.);
 	vector<vector<double>> solpost;
 	solpost.push_back(solcount);
 	//	while (counterout < 15 && fabs(diff)>0.1)
-	while (counterout < 3 && fabs(diff)>0.001)
+	//while (counterout < 5 && fabs(diff2)>0.1)
+	while (counterout < 30 && fabs(diff2)>0.05)
 	{
 		std::cout << "load step = " << counterout << std::endl;
 		Int counter = 0, maxcount = 30;
-		Doub err1 = 10., err2 = 10., tol = 10e-3;
+		Doub err1 = 10., err2 = 10., tol = 1.e-3;
 		MatDoub dws(sz, 1, 0.), dwb(sz, 1, 0.), dww(sz, 1, 0.), R;
 		
 		//lamb = 1.;
-		Doub dlamb = 1.;
+		Doub dlamb = 1., lambn0 = lamb;
 		MatDoub dw(sz, 1, 0.);
 		//while (counter <  maxcount && err1 > tol && fabs(dlamb)>1.e-3)
-		while (counter <  maxcount && err1 > tol && fabs(diff)>0.001)
+		std::cout << "diff = " << diff << std::endl;
+		diff = 10;
+		//while (counter <  maxcount && err1 > tol && fabs(diff)>0.001)
+		while (counter <  maxcount && err1 > tol && fabs(dlamb) > tol)
 		{
 			lambn = lamb;
 			//newbodyforce = bodyforce;
@@ -425,7 +438,11 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 			dww *= dlamb;
 			dww += dws;
 			dw += dww;
-			lamb += dlamb;
+			if (counter != 0)
+			{
+				lamb += dlamb;
+			}
+			
 			displace += dww;
 			material->UpdateDisplacement(displace);
 			Doub rnorm = 0., normdw = 0., normfg = 0., unorm = 0.;
@@ -439,7 +456,8 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 			counter++;
 			diff = fabs(lamb) - fabs(lambn);
 		}
-		//cout << "diff = " << diff << endl;
+		diff2 = fabs(lambn0 -lamb)  ;
+		cout << " diff2 = " << diff2 << endl;
 		material->UpdatePlasticStrain();
 		solcount[0] = fabs(displace[2 * iddisplace[0] + 1][0]);
 		solcount[1] = lamb;
@@ -506,31 +524,41 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 
 	material->ResetPlasticStrain();
 	material->ResetDisplacement();
-
+	Doub postres = 0;
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
 	//Doub l = 10., lamb = 1., lambn=0, lamb3, diff = 100;
-	Doub l = 2, lamb = 0.1, lambn = 0, lamb3, diff = 100;
+	Doub l = 1., lamb = 1.3, lambn = 0, lamb3, diff = 100, diff2 = 100;
 	Int counterout = 0;
 	vector<double> solcount(2, 0.);
 	vector<vector<double>> solpost;
 	solpost.push_back(solcount);
 	//	while (counterout < 15 && fabs(diff)>0.1)
-	while (counterout < 3 && fabs(diff)>0.001)
+	//while (counterout < 5 && fabs(diff2)>0.1)
+	while (counterout < 30 && fabs(diff2)>0.05)
 	{
-		
+		//std::cout << "load step = " << counterout << std::endl;
 		Int counter = 0, maxcount = 30;
 		Doub err1 = 10., err2 = 10., tol = 1.e-3;
 		MatDoub dws(sz, 1, 0.), dwb(sz, 1, 0.), dww(sz, 1, 0.), R;
-		//lambn = lamb;
+
 		//lamb = 1.;
-		Doub dlamb = 1.;
+		Doub dlamb = 1., lambn0 = lamb;
 		MatDoub dw(sz, 1, 0.);
-		while (counter <  maxcount && err1 > tol && fabs(diff)>0.001)
+		//while (counter <  maxcount && err1 > tol && fabs(dlamb)>1.e-3)
+		//std::cout << "diff = " << diff << std::endl;
+		diff = 10;
+		//while (counter <  maxcount && err1 > tol && fabs(diff)>0.001)
+		while (counter <  maxcount && err1 > tol && fabs(dlamb) > tol)
 		{
 			lambn = lamb;
+			//newbodyforce = bodyforce;
+			//newbodyforce *= lamb;
+			//material->UpdateBodyForce(newbodyforce);
 
 			material->Assemble(KG, FINT, FBODY, allcoords, meshcoords, meshtopology);
+
+
 
 			R = FBODY;
 			R *= lamb;
@@ -607,7 +635,11 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 			dww *= dlamb;
 			dww += dws;
 			dw += dww;
-			lamb += dlamb;
+			if (counter != 0)
+			{
+				lamb += dlamb;
+			}
+
 			displace += dww;
 			material->UpdateDisplacement(displace);
 			Doub rnorm = 0., normdw = 0., normfg = 0., unorm = 0.;
@@ -620,8 +652,11 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 			//std::cout << " Iteration number = " << counter << " |  |du|/|u| = " << err2 << " |  |R| = " << " |  |R|/FE = " << err1 << " |  |R| = " << rnorm << " | Unrom  = " << unorm << " | lambn  = " << lambn << " | lamb  = " << lamb << " |  dlamb " << dlamb << std::endl;
 			counter++;
 			diff = fabs(lamb) - fabs(lambn);
+			postres = err1;
 		}
-
+		diff2 = fabs(lambn0 - lamb);
+		//cout << " diff2 = " << diff2 << endl;
+		//cout << " diff2 = " << diff2 << endl;
 		
 		//cout << "diff = " << diff << endl;
 		material->UpdatePlasticStrain();
@@ -629,16 +664,21 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 		solcount[1] = lamb;
 		solpost.push_back(solcount);
 		counterout++;
-		std::cout << " Iteration number = " << counter << "   |R|/FE = " << err1 << "  |du|/|u| = " << err2 << " | lambn  = " << lambn << " | lamb  = " << lamb << " |  dlamb " << dlamb << std::endl;
+		//std::cout << " Iteration number = " << counter << "   |R|/FE = " << err1 << " | lambn  = " << lambn << " | lamb  = " << lamb << std::endl;
 	}
+	std::cout << " Iteration number = " << counterout << "   |R|/FE = " << postres << " | lambn  = " << lambn << " | lamb  = " << lamb << std::endl;
+	
 	return solpost;
 
 }
 
 
+#include <direct.h>
 
 void MonteCarloTalude2()
 {
+	
+
 
 	//string nodestr = "nodes-mais-fina.txt";
 	//string elsstr = "elements-mais-fina.txt";
@@ -654,12 +694,6 @@ void MonteCarloTalude2()
 	vector<vector<vector<Doub>>> allcoords;
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
 
-	std::ofstream filemesh1("meshcoords.txt");
-	OutPutPost(meshcoords, filemesh1);
-
-	std::ofstream filemesh2("meshtopology.txt");
-
-	OutPutPost(meshtopology, filemesh2);
 
 	
 	std::clock_t start;
@@ -685,17 +719,73 @@ void MonteCarloTalude2()
 	Int nglobalpts = meshtopology.nrows()* npts;
 	Int sz = 2 * meshcoords.nrows();
 
-	Doub Lx = 10;//(*Correlation length in x direction*)
-	Doub Ly = 10;//(*Correlation length in y direction*)
+	Doub Lx = 25;//(*Correlation length in x direction*)
+	Doub Ly = 2.5;//(*Correlation length in y direction*)
 
 	Int samples = 1000, expansionorder = 30;
-	Doub sig = 0.2;
+	Doub sig = 0.1;
 	Int type = 1;
 	KLGalerkinRF *objKLGalerkinRF = new KLGalerkinRF(young, nu, thickness, bodyforce[1][0], planestress, order, Lx, Ly, sig, type, samples, expansionorder);
 
+	//system("mkdir -p D:\DClib\results");
+
+	//boost::filesystem::create_directories("D:\DClib\results");
+	int check;
+	//char* dirname = "D:\DClib\results";
+	//auto s = std::to_string( rand() % 30 + 1985);
+	auto s = std::to_string(2);
+	string namefolder = "D:/DClib/results";
+
+	namefolder += s;
+
+	char *cstr = new char[namefolder.length() + 1];
+	strcpy(cstr, namefolder.c_str());
+
+	check = mkdir(cstr);
+
+	string datafile = namefolder;
+	datafile += "/DATA.txt";
+	std::ofstream file(datafile);
+	file << " Young = " << young << " | nu = " << nu << endl;
+	file << " c = " << c << " | phi = " << phi << endl;
+	file << " bodyforce = " << bodyforce[1][0]  << endl;
+	file << " Mesh  = " << nodestr  << endl;
+	file << " samples = " << samples << " | expansion order = " << expansionorder << " | func type = "<< type << endl;
+	file << " variance = " << sig  << endl;
 	VecComplex  val; MatDoub  vec, HHAT;
 	NRmatrix<MatDoub> randomfield;
 	objKLGalerkinRF->SolveGenEigValProblem(allcoords, meshcoords, meshtopology, val, vec, randomfield);
+
+
+	datafile = namefolder;
+	datafile += "/vec.txt";
+	std::ofstream filevec(datafile);
+	for (Int j = 0;j < expansionorder;j++)
+	{
+		for (Int i = 0;i < vec.nrows();i++)
+		{
+			filevec << vec[i][j] << endl;
+		}
+	}
+
+	datafile = namefolder;
+	datafile += "/val.txt";
+	std::ofstream fileval(datafile);
+	for (Int j = 0;j < val.size();j++)
+	{
+		fileval << val[j] << endl;
+	}
+
+	datafile = namefolder;
+	datafile += "/meshcoords.txt";
+	std::ofstream filemesh1(datafile);
+	OutPutPost(meshcoords, filemesh1);
+
+	datafile = namefolder;
+	datafile += "/meshtopology.txt";
+	std::ofstream filemesh2(datafile);
+
+	OutPutPost(meshtopology, filemesh2);
 
 
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
@@ -704,7 +794,7 @@ void MonteCarloTalude2()
 	Int  fail = 0;
 	cout << "\n starting Monte Carlo " << endl;
 	start = std::clock();
-	Int postprintfreq = 10;
+	Int postprintfreq = 50;
 	Doub sum = 0.;
 	MatDoub solpost(samples, 2, 0.), solpost2(samples, 1, 0.);
 	for (Int imc = 0;imc < samples;imc++)
@@ -741,96 +831,110 @@ void MonteCarloTalude2()
 
 		if (imc % postprintfreq == 0)
 		{
-			//std::cout << " mean = " << mean << std::endl;
-			//std::cout << " sdev = " << sqrt(var) << std::endl;
 
-			//duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
-			//std::cout << " time to solve with (Cholesky) " << duration << '\n';
-
+			string  filename = namefolder;
 			vector<vector<double>> hhatx;
-			string name = "Coesao";
+			string name = "/Coesao";
 			string ext = ".txt";
+			filename += name;
 			auto s = std::to_string(imc);
-			name += s;
-			name += ext;
+			filename += s;
+			filename += ext;
 			material->PostProcess(0,allcoords, meshtopology, hhatinho, hhatx);
-			std::ofstream file(name);
+			std::ofstream file(filename);
 			OutPutPost(hhatx, file);
 
 
-
+			filename = namefolder;
 			vector<vector<double>> hhatx2;
-			string namesss = "Phi";
+			string namesss = "/Phi";
 			string extsss = ".txt";
+			filename += namesss;
 			auto sss = std::to_string(imc);
-			namesss += sss;
-			namesss += ext;
+			filename += sss;
+			filename += ext;
 			material->PostProcess(1, allcoords, meshtopology, hhatinho, hhatx2);
-			std::ofstream filesss(namesss);
+			std::ofstream filesss(filename);
 			OutPutPost(hhatx2, filesss);
 			
-
-			string names = "FxU";
+			filename = namefolder;
+			string names = "/FxU";
 			string exts = ".txt";
+			filename += names;
 			auto ss = std::to_string(imc);
-			names += ss;
-			names += exts;
-			std::ofstream file8(names);
+			filename += ss;
+			filename += exts;
+			std::ofstream file8(filename);
 			OutPutFile(solpost23, file8);
 
-			//vector<vector<double>> solx, soly;
-			//material->PostProcess(allcoords, meshtopology, material->fdisplace, solx, soly);
-			//string name2 = "soly";
-			//string ext2 = ".txt";
-			//auto s2 = std::to_string(imc);
-			//name2 += s2;
-			//name2 += ext2;
-			//std::ofstream file2(name2);
-			//OutPutPost(soly, file2);
+			filename = namefolder;
+			vector<vector<double>> solx, soly;
+			material->PostProcess(allcoords, meshtopology, material->fdisplace, solx, soly);
+			string name2 = "/soly";
+			string ext2 = ".txt";
+			filename += name2;
+			auto s2 = std::to_string(imc);
+			filename += s2;
+			filename += ext2;
+			std::ofstream file2(filename);
+			OutPutPost(soly, file2);
+
+			filename = namefolder;
+			name2 = "/solx";
+			ext2 = ".txt";
+			filename += name2;
+			s2 = std::to_string(imc);
+			filename += s2;
+			filename += ext2;
+			std::ofstream file22(filename);
+			OutPutPost(solx, file22);
 			
+
+			filename = namefolder;
 			vector<vector<double>> epsppost;
 			material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
-			string name3 = "plasticsqrtj2";
+			string name3 = "/plasticsqrtj2";
 			string ext3 = ".txt";
+			filename += name3;
 			auto s3 = std::to_string(imc);
-			name3 += s3;
-			name3 += ext3;
-			std::ofstream file3(name3);
+			filename += s3;
+			filename += ext3;
+			std::ofstream file3(filename);
 			OutPutPost(epsppost, file3);
+
+			filename = namefolder;
+			filename += "/montecarlosafetyfactor.txt";
+			std::ofstream file23(filename);
+			OutPutFile1var(solpost2, file23);
 			
+			filename = namefolder;
+			filename += "/failureprobaility.txt";
+			std::ofstream file83(filename);
+			OutPutFile(solpost, file83);
 
 		}
 		Int last = solpost23.nrows() - 1;
-		//cout << "last = " << last;
 		Doub data = solpost23[last][1];
 		if (data <= 1.)
 		{
 			fail++;
 		}
 		sum += data;
-		//if (imc % 100 == 0)
-		//{
-		//cout << " MC sample:  " << imc << " Slope load factor " << sum / (imc + 1) << "  Nload steps = " << last << " | mean coes"<<mean[0] << " | mean phi = " << mean[1] << endl;
-		//}
-		cout << " MC sample:  " << imc << " Slope load factor = " << sum / (imc + 1) << " | mean coes = " << c + c * mean[0] << " | mean phi = " << phi+phi*mean[1] << " | var coes = " << var[0] << " | var phi = " << var[1] << endl;
-		//}
+		cout << " mc it = " << imc << " Safety fator mean = " << sum / (imc + 1)  << " |  failure probability = " << Doub(fail) / Doub(imc) << " | Current safety fator = " << data << endl;
 
-
+		string  filename = namefolder;
 		solpost[imc][0] = imc;
 		solpost[imc][1] += sum / (imc + 1);
 		solpost2[imc][0] = sol[1][0];
-		std::ofstream file8("saidafina.txt");
-		OutPutFile(solpost, file8);
+
 	}
+	file << "failue probability = " << Doub(fail) / Doub(samples) << endl;
 	cout << "failue probability = " << Doub(fail) / Doub(samples);
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 	std::cout << "\n Monte Carlo simualtion time  " << duration << '\n';
-	//solpost.Print();
-	//std::ofstream file8("saidafina.txt");
-	//OutPutFile(solpost, file8);
+	file << "\n Monte Carlo simualtion time  " << duration << '\n';
 
-	std::ofstream file2("saidafina2.txt");
-	OutPutFile1var(solpost2, file2);
+
 
 }
 
