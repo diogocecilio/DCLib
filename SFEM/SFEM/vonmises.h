@@ -37,11 +37,25 @@ public:
 		K = fK;
 		G = fG;
 	}
+	inline void updateatributes(NRvector<MatDoub> mult)
+	{
+		fyoung0 = fyoung;
+		fnu0 = fnu;
+		fsigy0 = fsigy;
+		Doub newyoung = fyoung + mult[0][0][0]*fyoung;
+		setup(newyoung, fnu, fnu);
+	}
+	inline void restoreoriginalatributes()
+	{
+		setup(fyoung0, fnu0, fsigy0);
+	}
 
 	Doub fyoung;
 	Doub fnu;
+	Doub fyoung0;
+	Doub fnu0;
 private:
-
+	Doub fsigy0;
 	Doub fsigy;
 	Doub fK;
 	Doub fG;
