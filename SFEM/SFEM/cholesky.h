@@ -1,10 +1,10 @@
 #include "nr3.h"
-
+//extern bool globalfail;
 struct Cholesky {
 	Int n;
 	MatDoub el;
 	bool fail = false;
-	Cholesky(MatDoub_I &a) : n(a.nrows()), el(a) {
+ 	Cholesky(MatDoub_I &a) : n(a.nrows()), el(a) {
 		Int i, j, k;
 		VecDoub tmp;
 		Doub sum;
@@ -16,8 +16,9 @@ struct Cholesky {
 					if (sum <= 0.0) {
 						fail = true;
 						//cout << " \n negative sum in Cholesky, exiting and trying LU...." << endl;
-						return;
-						//throw("Cholesky failed");
+						//return;
+						//globalfail = true;
+						throw("Cholesky failed");
 					}
 
 					el[i][i] = sqrt(sum);
