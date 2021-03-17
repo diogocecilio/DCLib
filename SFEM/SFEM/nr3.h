@@ -8,6 +8,8 @@
 //#define _TURNONFPES_ 1
 
 // all the system #include's we'll ever need
+//#include "boost/numeric/ublas/matrix.hpp"
+//#include "boost/numeric/ublas/io.hpp"
 #include <fstream>
 #include <cmath>
 #include <complex>
@@ -152,10 +154,20 @@ public:
 	void resize(int newn); // resize (contents not preserved)
 	void assign(int newn, const T &a); // resize and assign a constant val
 	void Print();
+	//void  Toboost(boost::numeric::ublas::vector<double> &boostvec);
 	//void CopyFromMatrix(NRmatrix<T> & source);
 
 	~NRvector();
 };
+
+//template <class T>
+//void  NRmatrix<T>::Toboost(boost::numeric::ublas::vector<double> &boostvec)
+//{
+//	boostvec.resize(this->nrows());
+//	for (unsigned i = 0; i < this->nrows(); ++i)
+//		for (unsigned j = 0; j < this->ncols(); ++j)
+//			boostmat(i, j) = v[i][j];
+//}
 
 //// NRvector definitions
 //template <class T>
@@ -281,6 +293,10 @@ void NRvector<T>::Print() {
 
 #endif //ifdef _USESTDVECTOR_
 
+//using std::vector;
+//using boost::numeric::ublas::matrix;
+//using namespace boost::numeric::ublas;
+
 template <class T>
 class NRmatrix   {
 private:
@@ -316,12 +332,34 @@ public:
 	T Det();
 
 	void  CopyFromVecDoub(const  NRvector<T>&input);
+	//void Toboost( matrix<double> &boostmat);
+	//void Fromboost(matrix<double> &boostmat);
 
 
 	//inline void CopyFromNRtensor(NRtensor<T> source);
 	
 	~NRmatrix();
 };
+
+//template <class T>
+//void  NRmatrix<T>::Toboost(matrix<double> &boostmat)
+//{
+//	boostmat.resize(this->nrows(), this->ncols());
+//	for (unsigned i = 0; i < this->nrows(); ++i)
+//		for (unsigned j = 0; j < this->ncols(); ++j)
+//			boostmat(i, j) = v[i][j];
+//}
+//
+//template <class T>
+//void  NRmatrix<T>::Fromboost(matrix<double> &boostmat)
+//{
+//	this->assign(boostmat.size1(), boostmat.size2(),0.);
+//	for (unsigned i = 0; i < boostmat.size1(); ++i)
+//		for (unsigned j = 0; j < boostmat.size2(); ++j)
+//			v[i][j]= boostmat(i, j);
+//}
+
+
 template <class T>
 void  NRmatrix<T>::CopyFromVecDoub(const  NRvector<T>&input)
 {
@@ -873,7 +911,9 @@ void NRMat3d<T>::Print()
 
 template <class T>
 class NRtensor   {
+	bool fail = false;
 private:
+	
 	int nn;	// size of array. upper index is nn-1
 	T *v;
 public:
@@ -892,6 +932,9 @@ public:
 	void assign(int newn, const T &a); // resize and assign a constant val
 	void Print();
 	~NRtensor();
+	bool isfailed() {
+		return fail;
+	}
 
 	inline T & XX() const {
 		return v[_XX_];
@@ -951,6 +994,9 @@ public:
 
 	 void CopyFromNRmatrix(NRmatrix<T> source);
 };
+
+
+
 
 template <class T>
 void NRtensor<T>::CopyFromNRmatrix(NRmatrix<T> source)
@@ -1209,6 +1255,10 @@ void  NRtensor<T>::EigenSystem(NRmatrix<T> & eigenvalues, NRmatrix<T> & eigenvec
 	NRmatrix<T> fulltensor,internaleigenvectors;
 	this->FromTensorVoigtToFullTensor(fulltensor);
 	Jacobi* system = new Jacobi(fulltensor);
+	if (system->fail)
+	{
+		fail = true;
+	}
 	eigenvectors = system->v;
 	VecDoub valtemp = system->d;
 	eigenvalues.resize(valtemp.size(), 1);
