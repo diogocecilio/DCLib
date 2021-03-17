@@ -1,5 +1,5 @@
 #include "nr3.h"
-
+//extern bool globalfail;
 struct LUdcmp
 {
 	Int n;
@@ -13,19 +13,25 @@ struct LUdcmp
 	//Doub det();
 	//void mprove(VecDoub_I &b, VecDoub_IO &x);
 	MatDoub_I &aref;
-
+	bool fail = false;
 
 	LUdcmp(MatDoub_I &a) : n(a.nrows()), lu(a), aref(a), indx(n) {
 		const Doub TINY = 1.0e-40;
 		Int i, imax, j, k;
 		Doub big, temp;
 		VecDoub vv(n);
+		
 		d = 1.0;
 		for (i = 0;i<n;i++) {
 			big = 0.0;
 			for (j = 0;j<n;j++)
 				if ((temp = abs(lu[i][j])) > big) big = temp;
-			if (fabs(big) < 10e-12) throw("Singular matrix in LUdcmp");
+			if (fabs(big) < 10e-12) {
+				//fail = true; 
+				cout << "Singular matrix in LUdcmp" << endl;
+				//globalfail = true;
+				//return;
+			}
 			vv[i] = 1.0 / big;
 		}
 		for (k = 0;k<n;k++) {
@@ -57,6 +63,7 @@ struct LUdcmp
 	}
 	void solve(VecDoub_I &b, VecDoub_O &x)
 	{
+		///if (fail)return;
 		Int i, ii = 0, ip, j;
 		Doub sum;
 		if (b.size() != n || x.size() != n)

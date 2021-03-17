@@ -19,14 +19,14 @@ gridmesh::~gridmesh()
 }
 
 
-void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology)
+void gridmesh::CreateMesh(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology)
 {
 
 	if (forder == 2)
 	{
 		Doub dx = fL / (2 * fnx);
 		Doub dy = fh / (2 * fny);
-		vector< vector<Doub> > meshnodes;
+		std::vector< std::vector<Doub> > meshnodes;
 		Doub x = 0, y = 0;
 		if (forder == 2)
 		{
@@ -36,7 +36,7 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 				{
 					for (Int j = 0; j < 2 * fnx + 1; j++)
 					{
-						vector<Doub> co(2);
+						std::vector<Doub> co(2);
 						co[0] = x;
 						co[1] = y;
 						meshnodes.push_back(co);
@@ -47,7 +47,7 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 				{
 					for (Int k = 0; k < fnx + 1; k++)
 					{
-						vector<Doub> co(2);
+						std::vector<Doub> co(2);
 						co[0] = x;
 						co[1] = y;
 						meshnodes.push_back(co);
@@ -72,13 +72,13 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 		//meshcoords.Print();
 
 
-		vector< vector<Int> > temp;
+		std::vector< std::vector<Int> > temp;
 		//meshtopology = {};
 		Int b = 0;
 		Int a = 1;
 		Int l = 0;
 		Int c = 3 * fnx + 2;
-		vector<Int> data(8);
+		std::vector<Int> data(8);
 		for (Int i = 0;i < fny;i++)
 		{
 			for (Int j = 0;j < fnx;j++)
@@ -111,10 +111,10 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 			}
 		}
 
-		vector<Doub> temp3(2);
+		std::vector<Doub> temp3(2);
 		for (Int i = 0; i < meshtopology.nrows();i++)
 		{
-			vector< vector<Doub> > temp2;
+			std::vector< std::vector<Doub> > temp2;
 			for (Int j = 0; j < meshtopology.ncols(); j++)
 			{
 				Int top = meshtopology[i][j];
@@ -131,8 +131,8 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 		Doub dx = fL / (fnx - 1.);
 		Doub dy = fh / (fny - 1.);
 		Doub x = 0, y = 0;
-		vector< vector<Doub> > meshnodes;
-		vector<Doub> co(2);
+		std::vector< std::vector<Doub> > meshnodes;
+		std::vector<Doub> co(2);
 		//for (Int i = 0;i < fny;i++)
 		//{
 		//	//y = 0;
@@ -171,8 +171,8 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 		}
 
 
-		vector<Int> data(4);
-		vector< vector<Int> > temp;
+		std::vector<Int> data(4);
+		std::vector< std::vector<Int> > temp;
 		for (Int j = 0;j <= fny - 2;j++)
 		{
 			for (Int i = 1;i < fnx*fny - fny;i += fny)
@@ -214,10 +214,10 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 			}
 		}
 
-		vector<Doub> temp3(2);
+		std::vector<Doub> temp3(2);
 		for (Int i = 0; i < meshtopology.nrows();i++)
 		{
-			vector< vector<Doub> > temp2;
+			std::vector< std::vector<Doub> > temp2;
 			for (Int j = 0; j < meshtopology.ncols(); j++)
 			{
 				Int top = meshtopology[i][j];
@@ -240,7 +240,7 @@ void gridmesh::CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub &
 
 }
 
-void gridmesh::PrintAllCoords(vector<vector< vector<Doub > > > allcoords, MatInt  meshtopology)
+void gridmesh::PrintAllCoords(std::vector<std::vector< std::vector<Doub > > > allcoords, MatInt  meshtopology)
 {
 	for (Int i = 0; i < meshtopology.nrows(); i++)
 	{
@@ -254,7 +254,7 @@ void gridmesh::PrintAllCoords(vector<vector< vector<Doub > > > allcoords, MatInt
 	}
 }
 
- void gridmesh::GetElCoords(vector<vector< vector<Doub > > > allcoords, Int el, MatDoub & elcoords)
+ void gridmesh::GetElCoords(std::vector<std::vector< std::vector<Doub > > > allcoords, Int el, MatDoub & elcoords)
 {
 
 	elcoords.assign(allcoords[el].size(), 2, 0.);
@@ -268,7 +268,7 @@ void gridmesh::PrintAllCoords(vector<vector< vector<Doub > > > allcoords, MatInt
 	}
 }
 
- void gridmesh::FindIdsInPath(const MatDoub & path, vector<vector< vector<Doub > > > &allcoords, MatInt & meshtopology, vector<int> & idpath)
+ void gridmesh::FindIdsInPath(const MatDoub & path, std::vector<std::vector< std::vector<Doub > > > &allcoords, MatInt & meshtopology, std::vector<int> & idpath)
 {
 	MatDoub elcoords;
 	Int nels = allcoords.size();
@@ -324,7 +324,7 @@ void gridmesh::Line(VecDoub a, VecDoub b, Int ndivs, MatDoub & path)
 
 }
 
-void gridmesh::PrintGMeshVTK(vector<vector< vector<Doub > > >  allcoords, MatInt meshtopology, std::ofstream &file)
+void gridmesh::PrintGMeshVTK(std::vector<std::vector< std::vector<Doub > > >  allcoords, MatInt meshtopology, std::ofstream &file)
 {
 	file.clear();
 	int nelements = allcoords.size();

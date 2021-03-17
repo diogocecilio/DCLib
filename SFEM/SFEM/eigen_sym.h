@@ -1,6 +1,7 @@
 #include "nr3.h"
 
 struct Jacobi {
+	bool fail = false;
 	const Int n;
 	MatDoub a, v;
 	VecDoub d;
@@ -76,7 +77,9 @@ struct Jacobi {
 				z[ip] = 0.0;
 			}
 		}
-		throw("Too many iterations in routine jacobi");
+		//throw("Too many iterations in routine jacobi");
+		//std::cout << "Too many iterations in routine jacobi! Critical error!" << std::endl;
+		fail = true;
 	}
 	inline void rot(MatDoub_IO &a, const Doub s, const Doub tau, const Int i,
 		const Int j, const Int k, const Int l)

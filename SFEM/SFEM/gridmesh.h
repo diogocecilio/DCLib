@@ -7,14 +7,14 @@ public:
 	gridmesh(Doub L, Doub h, Int nx, Int ny, Int order);
 	~gridmesh();
 
-	void CreateMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology);
-	void PrintAllCoords(vector<vector< vector<Doub > > > allcoords, MatInt  meshtopology);
-	static void GetElCoords(vector<vector< vector<Doub > > > allcoords, Int el, MatDoub & elcoords);
-	static void FindIdsInPath(const MatDoub & path, vector<vector< vector<Doub > > > &allcoords, MatInt & meshtopology, vector<int> & idpath);
+	void CreateMesh(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology);
+	void PrintAllCoords(std::vector<std::vector< std::vector<Doub > > > allcoords, MatInt  meshtopology);
+	static void GetElCoords(std::vector<std::vector< std::vector<Doub > > > allcoords, Int el, MatDoub & elcoords);
+	static void FindIdsInPath(const MatDoub & path, std::vector<std::vector< std::vector<Doub > > > &allcoords, MatInt & meshtopology, std::vector<int> & idpath);
 	static void Line(VecDoub a, VecDoub b, Int ndivs, MatDoub & path);
-	void PrintGMeshVTK(vector<vector< vector<Doub > > >  allcoords, MatInt meshtopology, std::ofstream &file);
+	void PrintGMeshVTK(std::vector<std::vector< std::vector<Doub > > >  allcoords, MatInt meshtopology, std::ofstream &file);
 
-	inline void GetData(vector<vector< vector<Doub > > > &allcoords, MatDoub  &meshcoords, MatInt &meshtopology)
+	inline void GetData(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub  &meshcoords, MatInt &meshtopology)
 	{
 		allcoords = fallcoords;
 		meshcoords = fmeshcoords;
@@ -29,7 +29,7 @@ private:
 
 public:
 
-	vector<vector< vector<Doub > > > fallcoords;
+	std::vector<std::vector< std::vector<Doub > > > fallcoords;
 	MatDoub  fmeshcoords;
 	MatInt  fmeshtopology;
 	Int forder;

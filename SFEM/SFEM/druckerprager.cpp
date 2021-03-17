@@ -6,6 +6,7 @@
 #include <cmath>
 #include "cholesky.h"
 #include "mins_ndim.h"
+//extern bool globalfail;
 druckerprager::druckerprager()
 {
 }
@@ -54,66 +55,105 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 	}
 	else {
 		Doub xitrial = I1 / sqrt(3.);
-		Doub rhotrial = sqrt(2. * J2);
 		MatDoub pt, vec, vect;
-		stresstrialtensor.EigenSystem(pt, vec);
-
-		Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
-		Doub betasol = atan((sqrt(3.)*(-sig2 + sig3)) / (-2.* sig1 + sig2 + sig3));
-		
-		Doub xisol=FindMinimum(pt,xitrial, fflag);
-		MatDoub sig = HW(F1HWCylDruckerPragerSmoothPSMATCH(xisol, rhotrial, betasol));
-
-		MatDoub nvec;
-		MatDoub fulltensorproj = stressrecosntruction(sig, vec);
-		MatDoub Q = ComputeQ(fulltensorproj, tempepsemat, projstress, projstrain, projgamma,nvec);
-		Doub checkdet = 1.e-8;
-		Doub detQ= fabs(Q.Det());
-
-		//if (detQ < checkdet )
-		if (detQ < checkdet)
+		Doub rhotrial = sqrt(2. * J2);
+		if (fabs(J2)<1.e-3)
 		{
+			//cout << " fail true " << endl;
+			//cout << " J2 " << J2 << endl;
+			projstress = stresstrialtensor;
+			projstrain = epse;
 			Dept = C;
 			Dep.assign(3, 3, 0.);
 			Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
 			Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
 			Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
-			fflag = true;
+			projgamma = 0.;
+			
 		}
 		else {
-		//	cout << "detQ = " << detQ << endl;
-		//	Q.Print();
-			MatDoub invQ,R;
-			//Cholesky *chol = new Cholesky(Q);
-			//chol->inverse(invQ);
-			//if (chol->fail)
-			//{
+
+			stresstrialtensor.EigenSystem(pt, vec);
+			Doub sig1 = pt[0][0], sig2 = pt[0][1], sig3 = pt[0][2];
+			Doub betasol = atan((sqrt(3.)*(-sig2 + sig3)) / (-2.* sig1 + sig2 + sig3));
+
+			Doub xisol = FindMinimum(pt, xitrial, fflag);
+			MatDoub sig = HW(F1HWCylDruckerPragerSmoothPSMATCH(xisol, rhotrial, betasol));
+
+			MatDoub nvec;
+			MatDoub fulltensorproj = stressrecosntruction(sig, vec);
+			MatDoub Q = ComputeQ(fulltensorproj, tempepsemat, projstress, projstrain, projgamma, nvec);
+			Doub checkdet = 1.e-8;
+			Doub detQ = fabs(Q.Det());
+
+			//if (detQ < checkdet )
+			if (detQ < checkdet || stresstrialtensor.isfailed() || fflag ==false)
+			{
+				//cout << " fail true " << endl;
+				//cout << " J2 " << J2 << endl;
+				projstress = stresstrialtensor;
+				projstrain = epse;
+				Dept = C;
+				Dep.assign(3, 3, 0.);
+				Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
+				Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
+				Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
+				projgamma = 0.;
+				return;
+			}
+			else {
+				//	cout << "detQ = " << detQ << endl;
+				//	Q.Print();
+				MatDoub invQ, R;
+				//Cholesky *chol = new Cholesky(Q);
+				//chol->inverse(invQ);
+				//if (chol->fail)
+				//{
 				LUdcmp *lu = new LUdcmp(Q);
 				lu->inverse(invQ);
-			//}
+				//}
+				if (lu->fail)
+				{
+					cout << " LU fail true " << endl;
+					projstress = stresstrialtensor;
+					projstrain = epse;
+					Dept = C;
+					Dep.assign(3, 3, 0.);
+					Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
+					Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
+					Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
+					projgamma = 0.;
+					return;
+				}
+				else {
 
-			invQ.Mult(C, R);
-			Dept = R;
-			MatDoub asol, tempprod, tempprodT, temp2;
-			//cout << "nvec = " << endl;
-			//nvec.Print();
-			R.Mult(nvec, tempprod);
-			Doub sum = 0.;
-			for (Int i = 0;i < nvec.nrows();i++)sum += nvec[i][0] * tempprod[i][0];
-			//std::cout << "sum = " << sum  <<std::endl;
-			tempprod.Transpose(tempprodT);
-			tempprod.Mult(tempprodT, temp2);
 
-			temp2 *= 1. / sum;
-			Dept -= temp2;
 
-			Dep.assign(3, 3, 0.);
-			Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
-			Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
-			Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
-			fflag = true;
-			//Dep.Print();
+					delete lu;
 
+					invQ.Mult(C, R);
+					Dept = R;
+					MatDoub asol, tempprod, tempprodT, temp2;
+					//cout << "nvec = " << endl;
+					//nvec.Print();
+					R.Mult(nvec, tempprod);
+					Doub sum = 0.;
+					for (Int i = 0;i < nvec.nrows();i++)sum += nvec[i][0] * tempprod[i][0];
+					//std::cout << "sum = " << sum  <<std::endl;
+					tempprod.Transpose(tempprodT);
+					tempprod.Mult(tempprodT, temp2);
+
+					temp2 *= 1. / sum;
+					Dept -= temp2;
+
+					Dep.assign(3, 3, 0.);
+					Dep[0][0] = Dept[0][0];Dep[0][1] = Dept[0][1];Dep[0][2] = Dept[0][5];
+					Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
+					Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
+					fflag = true;
+					//Dep.Print();
+				}
+			}
 		}
 	}
 }
@@ -123,7 +163,7 @@ Doub druckerprager::FindMinimum(MatDoub pt, Doub xitrial , bool flag)
 	Doub xisol;
 	Funcd func;
 	func.setpt(pt, fyoung, fnu, fcoesion, fphi);
-	xisol = rtsafe(func, -10.e12, 10.e12, 10e-5);
+	xisol = rtsafe(func, -10.e12, 10.e12, 10e-5,flag);
 	return xisol;
 }
 

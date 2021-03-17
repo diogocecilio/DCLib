@@ -63,7 +63,7 @@ void KLGalerkinRF::CacStiffB(MatDoub &BE, const MatDoub  &elcoords)
 
 
 }
-void KLGalerkinRF::AssembleB(MatDoub &B, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
+void KLGalerkinRF::AssembleB(MatDoub &B, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
 {
 	MatDoub BE, elcoords, eltopology;
 	GetElCoords(allcoords, 0, elcoords);
@@ -138,7 +138,7 @@ void KLGalerkinRF::CacStiffC(MatDoub &CE, const MatDoub  &elcoords1, const MatDo
 		}
 	}
 }
-void KLGalerkinRF::AssembleC(MatDoub &C, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
+void KLGalerkinRF::AssembleC(MatDoub &C, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
 {
 	MatDoub elcoords, elcoords1, elcoords2, CE;
 	Int rowglob, colglob;
@@ -195,7 +195,7 @@ Doub KLGalerkinRF::AutocorrelationFunc(MatDoub  x1, MatDoub  x2)
 	return val;
 }
 
-void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, NRmatrix<MatDoub>  & HHAT)
+void KLGalerkinRF::SolveGenEigValProblem(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, NRmatrix<MatDoub>  & HHAT)
 {
 	std::clock_t start;
 	double duration;
@@ -220,6 +220,7 @@ void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > 
 	MatDoub invB, ibvBC, PHIt, PHI;
 	Cholesky* chol = new Cholesky(B);
 	chol->inverse(invB);
+	delete chol;
 	invB.Mult(C, ibvBC);
 
 	//Jacobi* Jaco = new Jacobi(ibvBC);
@@ -255,7 +256,7 @@ void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > 
 
 	std::cout << "\n Integrating the eigenfunctions over the domain to normilize them..." << endl;
 	start = std::clock();
-	vector<double> vecint;
+	std::vector<double> vecint;
 	val.assign(M, 0.);
 	vec.assign(degreesfredom, M, 0.);
 	MatDoub vectocomputeintegral(degreesfredom, 1);
@@ -290,7 +291,7 @@ void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > 
 	MatDoub error;
 	ComputeVarianceError(val, vec, error);
 
-	vector<vector<double>> errpost;
+	std::vector<std::vector<double>> errpost;
 	PostProcess(allcoords, meshtopology, error, errpost);
 	std::ofstream file("VARERROOOO.txt");
 	OutPutPost(errpost, file);
@@ -342,7 +343,7 @@ void KLGalerkinRF::SolveGenEigValProblem(const vector<vector< vector<Doub > > > 
 
 }
 
-Doub KLGalerkinRF::PerfomIntegralOfListconst2(const vector<vector< vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec)
+Doub KLGalerkinRF::PerfomIntegralOfListconst2(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec)
 {
 	MatDoub xycoords1, xycoords2, sol1, sol2;
 	Doub delta = 0.05, sum = 0., solmean, dx, dy, solu, xi, eta;
@@ -389,7 +390,7 @@ void KLGalerkinRF::ComputeVarianceError(VecComplex &val, MatDoub &vec, MatDoub &
 }
 
 
-Doub KLGalerkinRF::PerfomIntegralOfListconst(const vector<vector< vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec)
+Doub KLGalerkinRF::PerfomIntegralOfListconst(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec)
 {
 	MatDoub xycoords1, xycoords2, sol1, sol2, intrule, psis, elcoords, GradPsi, Jac;
 	Doub  sum = 0., solu, xi, eta, w;

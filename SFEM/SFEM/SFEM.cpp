@@ -1,8 +1,22 @@
 // SFEM.cpp : Defines the entry point for the console application.
 //
 
-#include "stdafx.h"
 #include <iostream>
+//#include <boost/filesystem.hpp>
+//#include <boost/numeric/ublas/vector.hpp>
+//#include <boost/numeric/ublas/vector_proxy.hpp>
+//#include <boost/numeric/ublas/matrix.hpp>
+//#include <boost/numeric/ublas/triangular.hpp>
+//#include <boost/numeric/ublas/lu.hpp>
+//#include <boost/numeric/ublas/io.hpp>
+//#include <iostream>
+//#include <boost/numeric/ublas/vector.hpp>
+//#include <boost/numeric/ublas/matrix_sparse.hpp>
+//#include <boost/numeric/ublas/vector_sparse.hpp>
+//#include <boost/numeric/ublas/lu.hpp>
+//#include <boost/numeric/ublas/io.hpp>
+
+#include <direct.h>
 #include <iomanip>
 #include <cmath>
 #include "shapequad.h"
@@ -16,12 +30,13 @@
 #include <math.h>
 #include <cmath>
 #include "mins_ndim.h"
-
+#include <algorithm>
 //#include <boost/filesystem.hpp>
 
-
+//bool globalfail = false;
 using namespace std;
 
+MatDoub boostsolve(MatDoub KG, MatDoub FG);
 Doub beamproblem(Int nx, Int ny, Int order);
 void stochasticproblem(MatDoub &HHAT, gridmesh & grid);
 void stochasticproblemtalude(MatDoub &HHAT);
@@ -30,34 +45,35 @@ void OutPutFile(MatDoub & postdata, std::ofstream &file);
 void OutPutFile1var(MatDoub & postdata, std::ofstream &file);
 void OutPutFile4var(MatDoub & postdata, std::ofstream &file);
 void convergencemeshstudy();
-void OutPutPost(vector<vector<double>> & postdata, std::ofstream &file);
+void OutPutPost(std::vector<std::vector<double>> & postdata, std::ofstream &file);
 void OutPutPost(MatDoub & postdata, std::ofstream &file);
 void OutPutPost(MatInt & postdata, std::ofstream &file);
-void ReadMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, string filenameel, string filenamecoord);
-vector<Int> vecstr_to_vecint(vector<string> vs);
-vector<Doub> vecstr_to_vecdoub(vector<string> vs);
+void ReadMesh(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, string filenameel, string filenamecoord);
+std::vector<Int> vecstr_to_vecint(std::vector<string> vs);
+std::vector<Doub> vecstr_to_vecdoub(std::vector<string> vs);
 void IterativeProcess();
-vector<vector<int>>  LineTopology(vector<int> ids, Int order);
-void ToMatInt(vector<vector<int>> in, MatInt & out);
+std::vector<std::vector<int>>  LineTopology(std::vector<int> ids, Int order);
+void ToMatInt(std::vector<std::vector<int>> in, MatInt & out);
 void IterativeProcessPressure();
-vector<vector<double>>  IterativeSlopeStability(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho,elastoplastic2D< druckerprager > *  material);
+std::vector<std::vector<double>>  IterativeSlopeStability(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho,elastoplastic2D< druckerprager > *  material);
 template <class T>
-vector<T> vecstr_to_vec(vector<string> vs);
-vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material);
+std::vector<T> vecstr_to_vec(std::vector<string> vs);
+std::vector<std::vector<double>>  IterativeSlopeStabilityNew(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material);
 
 void MonteCarloTalude2();
+void ReadMatDoub(MatDoub & matdoub, std::string  file);
 
 
 bool flag = false;
 
-vector<vector<int>>  LineTopology(vector<int> ids, Int order)
+std::vector<std::vector<int>>  LineTopology(std::vector<int> ids, Int order)
 {
 	Int k = 0;
 
-	vector<vector<int>> vg;
+	std::vector<std::vector<int>> vg;
 	for (int j = 0;j < ids.size() / order;j++)
 	{
-		vector<int> v;
+		std::vector<int> v;
 		for (int i = 0;i < order + 1;i++)
 		{
 			v.push_back(ids[i + k]);
@@ -68,7 +84,7 @@ vector<vector<int>>  LineTopology(vector<int> ids, Int order)
 	return vg;
 }
 
-void ToMatInt(vector<vector<int>> in, MatInt & out)
+void ToMatInt(std::vector<std::vector<int>> in, MatInt & out)
 {
 	Int  rows = in.size();
 	Int cols = in[0].size();
@@ -211,30 +227,106 @@ Doub Func::operator()(VecDoub_I &x)
 
 void MonteCarloTalude();
 
-//#include <boost/filesystem.hpp>
+
+//#include <boost/locale.hpp>
+//#include <iostream>
+//
+//#include <ctime>
+//
+//int main()
+//{
+//	using namespace boost::locale;
+//	using namespace std;
+//	generator gen;
+//	locale loc = gen("");
+//	// Create system default locale
+//
+//	locale::global(loc);
+//	// Make it system global
+//
+//	cout.imbue(loc);
+//	// Set as default locale for output
+//
+//	cout << format("Today {1,date} at {1,time} we had run our first localization example") % time(0)
+//		<< endl;
+//
+//	cout << "This is how we show numbers in this locale " << as::number << 103.34 << endl;
+//	cout << "This is how we show currency in this locale " << as::currency << 103.34 << endl;
+//	cout << "This is typical date in the locale " << as::date << std::time(0) << endl;
+//	cout << "This is typical time in the locale " << as::time << std::time(0) << endl;
+//	cout << "This is upper case " << to_upper("Hello World!") << endl;
+//	cout << "This is lower case " << to_lower("Hello World!") << endl;
+//	cout << "This is title case " << to_title("Hello World!") << endl;
+//	cout << "This is fold case " << fold_case("Hello World!") << endl;
+//
+//}
+
+
+//#include "boost/numeric/ublas/matrix.hpp"
+//#include "boost/numeric/ublas/io.hpp"
+
+//using std::vector;
+//using boost::numeric::ublas::matrix;
+
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#ifdef _DEBUG
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+// Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
+// allocations to be of _CLIENT_BLOCK type
+#else
+#define DBG_NEW new
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+void repruducecriticalcase();
 
+//using namespace boost::ublas;
+
+//bool InvertMatrix(const matrix<double>& input, matrix<double>& inverse);
 
 int main()
 {
 
-	
+	repruducecriticalcase();
+
+	system("PAUSE");
+	return 0;
+
+	//_CrtMemState sOld;
+	//_CrtMemState sNew;
+	//_CrtMemState sDiff;
+	//_CrtMemCheckpoint(&sOld); //take a snapchot
+
+
 	//boost::filesystem::create_directories("/tmp/a/b/c");
 	////string nodestr = "nodes-mais-fina.txt";
-	////string elsstr = "elements-mais-fina.txt";
+	///string elsstr = "elements-mais-fina.txt";
 	////string nodestr = "nodes-fina.txt";
 	////string elsstr = "elements-fina.txt";
-	////string nodestr = "nodes-extrema-fina.txt";
-	////string elsstr = "elements-extrema-fina.txt";
-	string nodestr = "concentrated-nos.txt";
-	string elsstr = "concentrated-els.txt";
+	//string nodestr = "nodes-extrema-fina.txt";
+	//string elsstr = "elements-extrema-fina.txt";
+	//string nodestr = "concentrated-nos.txt";
+	//string elsstr = "concentrated-els.txt";
+	//string nodestr = "nodes-good.txt";
+	//string elsstr = "els-good.txt";
+	//string nodestr = "nos-110.txt";//ruim
+	//string elsstr = "els-110.txt";//ruim
+	//string nodestr = "nos-74.txt";
+	//string elsstr = "els-74.txt";
+
+	string nodestr = "nos-75.txt";
+	string elsstr = "els-75.txt";
+
+	//string nodestr = "nos-94.txt";
+	//string elsstr = "els-94.txt";
 
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
 
 	std::ofstream filemesh1("meshcoords.txt");
@@ -273,20 +365,173 @@ int main()
 	material->SetMemory(nglobalpts, sz);
 	material->UpdateBodyForce(bodyforce);
 
-	vector<vector<double>>  sol = IterativeSlopeStabilityNew(allcoords, meshcoords, meshtopology, hhatinho, material);//x = desloc y = loadfactor
+	std::vector<std::vector<double>>  sol = IterativeSlopeStabilityNew(allcoords, meshcoords, meshtopology, hhatinho, material);//x = desloc y = loadfactor
 
-
+	delete material;
 	////MonteCarloTalude();
 	MonteCarloTalude2();
+	//_CrtMemCheckpoint(&sNew); //take a snapchot 
+	//if (_CrtMemDifference(&sDiff, &sOld, &sNew)) // if there is a difference
+	//{
+	//	cout << "-----------_CrtMemDumpStatistics ---------"<<endl;
+	//	_CrtMemDumpStatistics(&sDiff);
+	//	cout << "-----------_CrtMemDumpAllObjectsSince ---------"<<endl;
+	//	_CrtMemDumpAllObjectsSince(&sOld);
+	//	cout << "-----------_CrtDumpMemoryLeaks ---------" <<endl;
+	//	_CrtDumpMemoryLeaks();
+	//}
 
 	
-
+	_CrtDumpMemoryLeaks();
 	system("PAUSE");
 	return 0;
 
 }
 
-vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material)
+void repruducecriticalcase()
+{
+	MatDoub hhatinho;
+	ReadMatDoub(hhatinho, "D:\\DClib\\results-75els-011996\\hhatinho1.145088.txt");
+	hhatinho.Print();
+
+	string nodestr = "nos-75.txt";
+	string elsstr = "els-75.txt";
+	MatDoub  meshcoords, elcoords;
+	MatInt meshtopology;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
+	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
+
+	std::ofstream filemesh1("meshcoords.txt");
+	OutPutPost(meshcoords, filemesh1);
+
+	std::ofstream filemesh2("meshtopology.txt");
+
+	OutPutPost(meshtopology, filemesh2);
+
+	std::clock_t start;
+	double duration;
+	start = std::clock();
+
+	cout << "\n starting stochastic simulation " << endl;
+
+
+	Doub thickness = 1.;
+	Doub young = 20000.;
+	Doub nu = 0.49;
+	Doub c = 16.25;
+	Doub phi = 20 * M_PI / 180.;
+	Int planestress = 0;
+	MatDoub bodyforce(2, 1, 0.), newbodyforce;
+	bodyforce[1][0] = -20.;
+	MatDoub ptsweigths;
+	int order = 2;
+	shapequad shape = shapequad(order, 1);
+	shape.pointsandweigths(ptsweigths);
+	Int npts = ptsweigths.nrows();
+	Int nglobalpts = meshtopology.nrows()* npts;
+	Int sz = 2 * meshcoords.nrows();
+
+	elastoplastic2D< druckerprager > *  material = new elastoplastic2D< druckerprager >(thickness, bodyforce, planestress, order, hhatinho);
+	material->fYC.setup(young, nu, c, phi);
+	material->SetMemory(nglobalpts, sz);
+	material->UpdateBodyForce(bodyforce);
+
+	std::vector<std::vector<double>>  sol = IterativeSlopeStabilityNew(allcoords, meshcoords, meshtopology, hhatinho, material);//x = desloc y = loadfactor
+
+	int check;
+	auto s = std::to_string(rand() % 30 + 1985);
+	string namefolder = "D:/DClib/criticalcases";
+	namefolder += s;
+
+	char *cstr = new char[namefolder.length() + 1];
+	strcpy(cstr, namefolder.c_str());
+
+	check = mkdir(cstr);
+
+	string datafile = namefolder;
+
+	string filename = namefolder;
+	std::vector<std::vector<double>> hhatx;
+	string name = "/Coesao";
+	string ext = ".txt";
+	filename += name;
+	filename += ext;
+	material->PostProcess(0, allcoords, meshtopology, hhatinho, hhatx);
+	std::ofstream file(filename);
+	OutPutPost(hhatx, file);
+
+
+	filename = namefolder;
+	std::vector<std::vector<double>> hhatx2;
+	string namesss = "/Phi";
+	string extsss = ".txt";
+	filename += namesss;
+	filename += ext;
+	material->PostProcess(1, allcoords, meshtopology, hhatinho, hhatx2);
+	std::ofstream filesss(filename);
+	OutPutPost(hhatx2, filesss);
+
+
+
+	filename = namefolder;
+	std::vector<std::vector<double>> solx, soly;
+	material->PostProcess(allcoords, meshtopology, material->fdisplace, solx, soly);
+	string name2 = "/soly";
+	string ext2 = ".txt";
+	filename += name2;
+	filename += ext2;
+	std::ofstream file2(filename);
+	OutPutPost(soly, file2);
+
+
+	filename = namefolder;
+	name2 = "/solx";
+	ext2 = ".txt";
+	filename += name2;
+	filename += ext2;
+	std::ofstream file22(filename);
+	OutPutPost(solx, file22);
+
+
+	filename = namefolder;
+	name2 = "/hhatinho";
+	ext2 = ".txt";
+	filename += name2;
+	filename += ext2;
+	std::ofstream file222(filename);
+	OutPutPost(hhatinho, file222);
+
+
+	filename = namefolder;
+	std::vector<std::vector<double>> epsppost;
+	material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
+	string name3 = "/plasticsqrtj2";
+	string ext3 = ".txt";
+	filename += name3;
+	filename += ext3;
+	std::ofstream file3(filename);
+	OutPutPost(epsppost, file3);
+
+}
+
+//MatDoub boostsolve(MatDoub KG, MatDoub FG)
+//{
+//	int sz = KG.nrows();
+//	matrix<double> A;
+//	boost::numeric::ublas::vector<double> b(sz);
+//	KG.Toboost(A);
+//	for (int i = 0;i < sz;i++)b(i) = FG[i][0];
+//	//compressed_matrix<double, column_major, 0> A(sz,sz,sz*sz);
+//	//A = m;
+//	permutation_matrix<size_t> pm(A.size1());
+//	lu_factorize(A, pm);
+//	lu_substitute(A, pm, b);
+//	MatDoub x(sz,1, 0.);
+//	for (int i = 0;i < sz;i++)x[i][0] = b(i);
+//	return x;
+//}
+
+std::vector<std::vector<double>>  IterativeSlopeStabilityNew(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material)
 {
 
 
@@ -294,7 +539,7 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 
 	Int ndivs = 1000;
 	MatDoub pathbottom, pathleft, pathright, pathdisplace;
-	vector<int>  idsbottom, idsleft, idsright, iddisplace;
+	std::vector<int>  idsbottom, idsleft, idsright, iddisplace;
 	VecDoub a(2), b(2);
 	a[0] = 0.;a[1] = 0.;
 	b[0] = 30.;b[1] = 0;
@@ -331,14 +576,13 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
 	//Doub l = 10., lamb = 1., lambn=0, lamb3, diff = 100;
-	Doub l =1., lamb =1.3, lambn = 0, lamb3, diff = 100,diff2=100;
+	Doub l =0.5, lamb =0.5, lambn = 0, lamb3, diff = 100,diff2=100;
 	Int counterout = 0;
-	vector<double> solcount(2, 0.);
-	vector<vector<double>> solpost;
+	std::vector<double> solcount(2, 0.);
+	std::vector<std::vector<double>> solpost;
 	solpost.push_back(solcount);
 	//	while (counterout < 15 && fabs(diff)>0.1)
-	//while (counterout < 5 && fabs(diff2)>0.1)
-	while (counterout < 30 && fabs(diff2)>0.05)
+	while (counterout < 10 && fabs(diff2)>0.005)
 	{
 		std::cout << "load step = " << counterout << std::endl;
 		Int counter = 0, maxcount = 30;
@@ -399,28 +643,28 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 			val = 0;
 			material->DirichletBC(KG, FBODY, idsleft, dir, val);
 
-			MatDoub invKG, sol;
+			//MatDoub invKG, sol;
 			Cholesky * chol = new Cholesky(KG);
 			VecDoub x(sz, 0.), b(sz, 0.);
+			//MatDoub x(sz,1, 0.), b(sz,1, 0.);
 			for (int i = 0;i < sz;i++)b[i] = R[i][0];
+			//x = boostsolve(KG, R);
 			chol->solve(b, x);
-			if (chol->fail)
-			{
-				LUdcmp *lu = new LUdcmp(KG);
-				lu->solve(b, x);
-			}
+			
+			//if (chol->fail)
+			//{
+			//	LUdcmp *lu = new LUdcmp(KG);
+			//	lu->solve(b, x);
+		//	}
 
 			for (int i = 0;i < sz;i++)dws[i][0] = x[i];
 
-			x.assign(sz, 0.);
+			x.assign(sz,0.);
 			b.assign(sz, 0.);
-			for (int i = 0;i < sz;i++)b[i] = FBODY[i][0];
+			for (int i = 0;i < sz;i++)b[i]= FBODY[i][0];
+			//x = boostsolve(KG, FBODY);
 			chol->solve(b, x);
-			if (chol->fail)
-			{
-				LUdcmp *lu = new LUdcmp(KG);
-				lu->solve(b, x);
-			}
+			delete chol;
 			for (int i = 0;i < sz;i++)dwb[i][0] = x[i];
 			Doub aa = 0.;
 			for (int i = 0;i < sz;i++)aa += dwb[i][0] * dwb[i][0];
@@ -438,11 +682,7 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 			dww *= dlamb;
 			dww += dws;
 			dw += dww;
-			if (counter != 0)
-			{
-				lamb += dlamb;
-			}
-			
+			lamb += dlamb;
 			displace += dww;
 			material->UpdateDisplacement(displace);
 			Doub rnorm = 0., normdw = 0., normfg = 0., unorm = 0.;
@@ -478,7 +718,7 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 	OutPutFile(solpost23, file8);
 
 
-	vector<vector<double>> epsppost;
+	std::vector<std::vector<double>> epsppost;
 	material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
 	string name3 = "epsppostnew";
 	string ext3 = ".txt";
@@ -491,15 +731,15 @@ vector<vector<double>>  IterativeSlopeStabilityNew(vector<vector< vector<Doub > 
 
 }
 
-vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material);
+std::vector<std::vector<double>>  IterativeProcessSlope(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material);
 
 
 
-vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material)
+std::vector<std::vector<double>>  IterativeProcessSlope(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material)
 {
 	Int ndivs = 1000;
 	MatDoub pathbottom, pathleft, pathright, pathdisplace;
-	vector<int>  idsbottom, idsleft, idsright, iddisplace;
+	std::vector<int>  idsbottom, idsleft, idsright, iddisplace;
 	VecDoub a(2), b(2);
 	a[0] = 0.;a[1] = 0.;
 	b[0] = 30.;b[1] = 0;
@@ -528,14 +768,14 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 	MatDoub displace;
 	displace.assign(sz, 1, 0.);
 	//Doub l = 10., lamb = 1., lambn=0, lamb3, diff = 100;
-	Doub l = 1., lamb = 1.3, lambn = 0, lamb3, diff = 100, diff2 = 100;
+	Doub l = 0.5, lamb = 0.5, lambn = 0, lamb3, diff = 100, diff2 = 100;
 	Int counterout = 0;
-	vector<double> solcount(2, 0.);
-	vector<vector<double>> solpost;
+	std::vector<double> solcount(7, 0.);
+	std::vector<std::vector<double>> solpost;
 	solpost.push_back(solcount);
 	//	while (counterout < 15 && fabs(diff)>0.1)
-	//while (counterout < 5 && fabs(diff2)>0.1)
-	while (counterout < 30 && fabs(diff2)>0.05)
+    while (counterout <10  && fabs(diff2)>0.005)
+	//while (counterout < 2)
 	{
 		//std::cout << "load step = " << counterout << std::endl;
 		Int counter = 0, maxcount = 30;
@@ -601,10 +841,12 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 			VecDoub x(sz, 0.), b(sz, 0.);
 			for (int i = 0;i < sz;i++)b[i] = R[i][0];
 			chol->solve(b, x);
+
 			if (chol->fail)
 			{
-				LUdcmp *lu = new LUdcmp(KG);
-				lu->solve(b, x);
+				//globalfail = true;
+				throw ("cholesky fail ");
+				return solpost;
 			}
 
 			for (int i = 0;i < sz;i++)dws[i][0] = x[i];
@@ -615,9 +857,12 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 			chol->solve(b, x);
 			if (chol->fail)
 			{
-				LUdcmp *lu = new LUdcmp(KG);
-				lu->solve(b, x);
+				//globalfail = true;
+				throw ("cholesky fail ");
+				return solpost;
 			}
+			delete chol;
+
 			for (int i = 0;i < sz;i++)dwb[i][0] = x[i];
 			Doub aa = 0.;
 			for (int i = 0;i < sz;i++)aa += dwb[i][0] * dwb[i][0];
@@ -635,10 +880,7 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 			dww *= dlamb;
 			dww += dws;
 			dw += dww;
-			if (counter != 0)
-			{
-				lamb += dlamb;
-			}
+			lamb += dlamb;
 
 			displace += dww;
 			material->UpdateDisplacement(displace);
@@ -655,15 +897,21 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 			postres = err1;
 		}
 		diff2 = fabs(lambn0 - lamb);
+		//std::cout << " Iteration number = " << counter;
 		//cout << " diff2 = " << diff2 << endl;
 		//cout << " diff2 = " << diff2 << endl;
 		
 		//cout << "diff = " << diff << endl;
 		material->UpdatePlasticStrain();
+		counterout++;
 		solcount[0] = diff;
 		solcount[1] = lamb;
+		solcount[2] = err1;
+		solcount[3] = err2;
+		solcount[4] = diff;
+		solcount[5] = diff2;
+		solcount[6] = counterout;
 		solpost.push_back(solcount);
-		counterout++;
 		//std::cout << " Iteration number = " << counter << "   |R|/FE = " << err1 << " | lambn  = " << lambn << " | lamb  = " << lamb << std::endl;
 	}
 	std::cout << " Iteration number = " << counterout << "   |R|/FE = " << postres << " | lambn  = " << lambn << " | lamb  = " << lamb << std::endl;
@@ -673,7 +921,9 @@ vector<vector<double>>  IterativeProcessSlope(vector<vector< vector<Doub > > > &
 }
 
 
-#include <direct.h>
+
+
+
 
 void MonteCarloTalude2()
 {
@@ -686,12 +936,26 @@ void MonteCarloTalude2()
 	//string elsstr = "elements-fina.txt";
 	//string nodestr = "nodes-extrema-fina.txt";
 	//string elsstr = "elements-extrema-fina.txt";
-	string nodestr = "concentrated-nos.txt";
-	string elsstr = "concentrated-els.txt";
+	//string nodestr = "concentrated-nos.txt";
+	//string elsstr = "concentrated-els.txt";
+	//string nodestr = "nodes-good.txt";
+	//string elsstr = "els-good.txt";
+
+	//string nodestr = "nos-110.txt";
+	//string elsstr = "els-110.txt";
+
+	//string nodestr = "nos-74.txt";
+	//string elsstr = "els-74.txt";
+
+	string nodestr = "nos-75.txt";
+	string elsstr = "els-75.txt";
+
+	//string nodestr = "nos-94.txt";
+	//string elsstr = "els-94.txt";
 
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
 
 
@@ -722,7 +986,7 @@ void MonteCarloTalude2()
 	Doub Lx = 25;//(*Correlation length in x direction*)
 	Doub Ly = 2.5;//(*Correlation length in y direction*)
 
-	Int samples = 1000, expansionorder = 30;
+	Int samples = 2000, expansionorder = 40;
 	Doub sig = 0.1;
 	Int type = 1;
 	KLGalerkinRF *objKLGalerkinRF = new KLGalerkinRF(young, nu, thickness, bodyforce[1][0], planestress, order, Lx, Ly, sig, type, samples, expansionorder);
@@ -732,9 +996,9 @@ void MonteCarloTalude2()
 	//boost::filesystem::create_directories("D:\DClib\results");
 	int check;
 	//char* dirname = "D:\DClib\results";
-	//auto s = std::to_string( rand() % 30 + 1985);
-	auto s = std::to_string(2);
-	string namefolder = "D:/DClib/results";
+	auto s = std::to_string( rand() % 30 + 1985);
+	//auto s = std::to_string(8);
+	string namefolder = "D:/DClib/results-75els-01";
 
 	namefolder += s;
 
@@ -751,29 +1015,24 @@ void MonteCarloTalude2()
 	file << " bodyforce = " << bodyforce[1][0]  << endl;
 	file << " Mesh  = " << nodestr  << endl;
 	file << " samples = " << samples << " | expansion order = " << expansionorder << " | func type = "<< type << endl;
-	file << " variance = " << sig  << endl;
+	file <<"Lx = "<<Lx<< " | Ly = "<< Ly << " variance = " << sig  << endl;
 	VecComplex  val; MatDoub  vec, HHAT;
 	NRmatrix<MatDoub> randomfield;
 	objKLGalerkinRF->SolveGenEigValProblem(allcoords, meshcoords, meshtopology, val, vec, randomfield);
 
+	delete objKLGalerkinRF;
 
 	datafile = namefolder;
 	datafile += "/vec.txt";
 	std::ofstream filevec(datafile);
-	for (Int j = 0;j < expansionorder;j++)
-	{
-		for (Int i = 0;i < vec.nrows();i++)
-		{
-			filevec << vec[i][j] << endl;
-		}
-	}
+	OutPutPost(vec, filevec);
 
 	datafile = namefolder;
 	datafile += "/val.txt";
 	std::ofstream fileval(datafile);
 	for (Int j = 0;j < val.size();j++)
 	{
-		fileval << val[j] << endl;
+		fileval << val[j].real() << endl;
 	}
 
 	datafile = namefolder;
@@ -797,14 +1056,18 @@ void MonteCarloTalude2()
 	Int postprintfreq = 50;
 	Doub sum = 0.;
 	MatDoub solpost(samples, 2, 0.), solpost2(samples, 1, 0.);
+	Doub soldatamin = 10.;
+	Doub soldatamax =-10;
+	std::vector<double> solvec;
 	for (Int imc = 0;imc < samples;imc++)
 	{
 		
-
+		//globalfail = false;
 		Int nrandomvars = randomfield.nrows();
 		Int nrowss = randomfield[0][0].nrows();
 		VecDoub mean(nrandomvars, 0.), var(nrandomvars, 0.);
 		MatDoub hhatinho(randomfield[0][0].nrows(), randomfield.nrows(), 0.);
+		MatDoub coesmat(randomfield[0][0].nrows(),1,0.),phimat(randomfield[0][0].nrows(),1,0.);
 		for (Int ivar = 0;ivar < nrandomvars;ivar++)
 		{
 			for (Int isample = 0;isample < nrowss;isample++)
@@ -816,118 +1079,201 @@ void MonteCarloTalude2()
 				var[ivar] += (mean[ivar] - hhatinho[isample][ivar])*(mean[ivar] - hhatinho[isample][ivar]);
 			}
 		}
+		for (int i = 0;i < randomfield[0][0].nrows();i++)coesmat[i][0] = hhatinho[i][0];
+		for (int i = 0;i < randomfield[0][0].nrows();i++)phimat[i][0] = hhatinho[i][1];
+
+
 
 		elastoplastic2D< druckerprager > *  material = new elastoplastic2D< druckerprager >(thickness, bodyforce, planestress, order, hhatinho);
 		material->fYC.setup(young, nu, c, phi);
 		material->SetMemory(nglobalpts, sz);
 		material->UpdateBodyForce(bodyforce);
 
-		vector<vector<double>>  sol = IterativeProcessSlope(allcoords, meshcoords, meshtopology, hhatinho, material);//x = desloc y = loadfactor
-
-		MatDoub solpost23;
-		solpost23.CopyFromVector(sol);
-
-		//solpost.Print();
-
-		if (imc % postprintfreq == 0)
-		{
-
-			string  filename = namefolder;
-			vector<vector<double>> hhatx;
-			string name = "/Coesao";
-			string ext = ".txt";
-			filename += name;
-			auto s = std::to_string(imc);
-			filename += s;
-			filename += ext;
-			material->PostProcess(0,allcoords, meshtopology, hhatinho, hhatx);
-			std::ofstream file(filename);
-			OutPutPost(hhatx, file);
+		std::vector<std::vector<double>>  sol = IterativeProcessSlope(allcoords, meshcoords, meshtopology, hhatinho, material);//x = desloc y = loadfactor
+		//if (globalfail)
+		//{
+		//	throw ("fail ");
+		//	continue;
+	//	}
+	//	else {
 
 
-			filename = namefolder;
-			vector<vector<double>> hhatx2;
-			string namesss = "/Phi";
-			string extsss = ".txt";
-			filename += namesss;
-			auto sss = std::to_string(imc);
-			filename += sss;
-			filename += ext;
-			material->PostProcess(1, allcoords, meshtopology, hhatinho, hhatx2);
-			std::ofstream filesss(filename);
-			OutPutPost(hhatx2, filesss);
-			
-			filename = namefolder;
-			string names = "/FxU";
-			string exts = ".txt";
-			filename += names;
-			auto ss = std::to_string(imc);
-			filename += ss;
-			filename += exts;
-			std::ofstream file8(filename);
-			OutPutFile(solpost23, file8);
+			MatDoub solpost23;
+			solpost23.CopyFromVector(sol);
 
-			filename = namefolder;
-			vector<vector<double>> solx, soly;
-			material->PostProcess(allcoords, meshtopology, material->fdisplace, solx, soly);
-			string name2 = "/soly";
-			string ext2 = ".txt";
-			filename += name2;
-			auto s2 = std::to_string(imc);
-			filename += s2;
-			filename += ext2;
-			std::ofstream file2(filename);
-			OutPutPost(soly, file2);
+			Int last = solpost23.nrows() - 1;
+			Doub data = solpost23[last][1];
+			solvec.push_back(data);
 
-			filename = namefolder;
-			name2 = "/solx";
-			ext2 = ".txt";
-			filename += name2;
-			s2 = std::to_string(imc);
-			filename += s2;
-			filename += ext2;
-			std::ofstream file22(filename);
-			OutPutPost(solx, file22);
+			double min = *min_element(solvec.begin(), solvec.end());
+			double max = *max_element(solvec.begin(), solvec.end());
 			
 
-			filename = namefolder;
-			vector<vector<double>> epsppost;
-			material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
-			string name3 = "/plasticsqrtj2";
-			string ext3 = ".txt";
-			filename += name3;
-			auto s3 = std::to_string(imc);
-			filename += s3;
-			filename += ext3;
-			std::ofstream file3(filename);
-			OutPutPost(epsppost, file3);
+			//solpost.Print();
 
-			filename = namefolder;
+			if (soldatamin>min || soldatamax<max)
+			{
+				string  filename = namefolder;
+				datafile = namefolder;
+				datafile += "/information.txt";
+				std::ofstream fileinfo(datafile);
+				fileinfo << "Monte Carlo Sample = " << imc << std::endl;
+				fileinfo << "Safety Factor = " << data << std::endl;
+				fileinfo << "r/normr = " << solpost23[last][2] << std::endl;
+				fileinfo << "u/normu = " << solpost23[last][3] << std::endl;
+				fileinfo << "diff= " << solpost23[last][4] << std::endl;
+				fileinfo << "diff2 = " << solpost23[last][5] << std::endl;
+				fileinfo << "counterout = " << solpost23[last][6] << std::endl;
+
+			//	solcount[0] = diff;
+			//	solcount[1] = lamb;
+			//	solcount[2] = err1;
+			//	solcount[3] = err2;
+			//	solcount[4] = diff;
+			///	solcount[5] = diff2;
+			//	solcount[6] = counterout;
+
+				filename = namefolder;
+				std::vector<std::vector<double>> hhatx;
+				string name = "/Coesao";
+				string ext = ".txt";
+				filename += name;
+				auto s = std::to_string(data);
+				filename += s;
+				filename += ext;
+				material->PostProcess(0, allcoords, meshtopology, hhatinho, hhatx);
+				std::ofstream file(filename);
+				OutPutPost(hhatx, file);
+
+
+				filename = namefolder;
+				std::vector<std::vector<double>> hhatx2;
+				string namesss = "/Phi";
+				string extsss = ".txt";
+				filename += namesss;
+				auto sss = std::to_string(data);
+				filename += sss;
+				filename += ext;
+				material->PostProcess(1, allcoords, meshtopology, hhatinho, hhatx2);
+				std::ofstream filesss(filename);
+				OutPutPost(hhatx2, filesss);
+
+				filename = namefolder;
+				string names = "/FxU";
+				string exts = ".txt";
+				filename += names;
+				auto ss = std::to_string(data);
+				filename += ss;
+				filename += exts;
+				std::ofstream file8(filename);
+				OutPutFile(solpost23, file8);
+
+				filename = namefolder;
+				std::vector<std::vector<double>> solx, soly;
+				material->PostProcess(allcoords, meshtopology, material->fdisplace, solx, soly);
+				string name2 = "/soly";
+				string ext2 = ".txt";
+				filename += name2;
+				auto s2 = std::to_string(data);
+				filename += s2;
+				filename += ext2;
+				std::ofstream file2(filename);
+				OutPutPost(soly, file2);
+
+
+				filename = namefolder;
+				name2 = "/solx";
+				ext2 = ".txt";
+				filename += name2;
+				s2 = std::to_string(data);
+				filename += s2;
+				filename += ext2;
+				std::ofstream file22(filename);
+				OutPutPost(solx, file22);
+
+
+				//filename = namefolder;
+				//std::vector<std::vector<double>> hc, hphi;
+				//material->PostProcessIntegrationPointVar(allcoords, meshtopology, coesmat, hc);
+				//material->PostProcessIntegrationPointVar(allcoords, meshtopology, phimat, hphi);
+				//name2 = "/CoesionIntPoint";
+				//ext2 = ".txt";
+				//filename += name2;
+				//s2 = std::to_string(data);
+				//filename += s2;
+				//filename += ext2;
+				//std::ofstream filehc(filename);
+				//OutPutPost(hc, filehc);
+
+				//filename = namefolder;
+				//name2 = "/PhiIntPoint";
+				//ext2 = ".txt";
+				//filename += name2;
+				//s2 = std::to_string(data);
+				//filename += s2;
+				//filename += ext2;
+				//std::ofstream filephi(filename);
+				//OutPutPost(hphi, filephi);
+
+
+				filename = namefolder;
+				name2 = "/hhatinho";
+				ext2 = ".txt";
+				filename += name2;
+				s2 = std::to_string(data);
+				filename += s2;
+				filename += ext2;
+				std::ofstream file222(filename);
+				OutPutPost(hhatinho, file222);
+
+
+				filename = namefolder;
+				std::vector<std::vector<double>> epsppost;
+				material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
+				string name3 = "/plasticsqrtj2";
+				string ext3 = ".txt";
+				filename += name3;
+				auto s3 = std::to_string(data);
+				filename += s3;
+				filename += ext3;
+				std::ofstream file3(filename);
+				OutPutPost(epsppost, file3);
+
+
+
+				std::cout << "min = " << min << std::endl;
+				std::cout << "max = " << max << std::endl;
+				std::cout << "soldatamax = " << soldatamax << std::endl;
+				std::cout << "soldatamin = " << soldatamin << std::endl;
+
+				if (soldatamin > min)
+				{
+					soldatamin = min;
+				}
+				else {
+					soldatamax = max;
+				}
+				
+			}
+
+			string filename = namefolder;
 			filename += "/montecarlosafetyfactor.txt";
 			std::ofstream file23(filename);
 			OutPutFile1var(solpost2, file23);
-			
-			filename = namefolder;
-			filename += "/failureprobaility.txt";
-			std::ofstream file83(filename);
-			OutPutFile(solpost, file83);
 
+			if (data <= 1.)
+			{
+				fail++;
+			}
+			cout << " mc it = " << imc << " | Current safety fator = " << data << endl;
+			solpost2[imc][0] = data;
+			delete material;
 		}
-		Int last = solpost23.nrows() - 1;
-		Doub data = solpost23[last][1];
-		if (data <= 1.)
-		{
-			fail++;
-		}
-		sum += data;
-		cout << " mc it = " << imc << " Safety fator mean = " << sum / (imc + 1)  << " |  failure probability = " << Doub(fail) / Doub(imc) << " | Current safety fator = " << data << endl;
-
-		string  filename = namefolder;
-		solpost[imc][0] = imc;
-		solpost[imc][1] += sum / (imc + 1);
-		solpost2[imc][0] = sol[1][0];
-
-	}
+	//}
+	string filename = namefolder;
+	filename += "/montecarlosafetyfactor.txt";
+	std::ofstream file23(filename);
+	OutPutFile1var(solpost2, file23);
 	file << "failue probability = " << Doub(fail) / Doub(samples) << endl;
 	cout << "failue probability = " << Doub(fail) / Doub(samples);
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
@@ -944,7 +1290,7 @@ void MonteCarloTalude()
 {
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	//string  elsstr = "els-grossa-very.txt";
 	//string nodestr = "nodes-grossa-very.txt";
 	//string  elsstr = "mesh-talude-els.txt";
@@ -1047,7 +1393,7 @@ void MonteCarloTalude()
 		material->SetMemory(nglobalpts, sz);
 		material->UpdateBodyForce(bodyforce);
 
-		vector<vector<double>>  sol = IterativeSlopeStability(allcoords, meshcoords, meshtopology, hhatinho,material);//x = desloc y = loadfactor
+		std::vector<std::vector<double>>  sol = IterativeSlopeStability(allcoords, meshcoords, meshtopology, hhatinho,material);//x = desloc y = loadfactor
 
 		MatDoub solpost23;
 		solpost23.CopyFromVector(sol);
@@ -1062,7 +1408,7 @@ void MonteCarloTalude()
 			//duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 			//std::cout << " time to solve with (Cholesky) " << duration << '\n';
 
-			vector<vector<double>> hhatx;
+			std::vector<std::vector<double>> hhatx;
 			string name = "hhat3";
 			string ext = ".txt";
 			auto s = std::to_string(imc);
@@ -1080,7 +1426,7 @@ void MonteCarloTalude()
 			std::ofstream file8(names);
 			OutPutFile(solpost23, file8);
 
-			//vector<vector<double>> solx, soly;
+			//std::vector<std::vector<double>> solx, soly;
 			//material->PostProcess(allcoords, meshtopology, material->fdisplace, solx, soly);
 			//string name2 = "soly";
 			//string ext2 = ".txt";
@@ -1090,7 +1436,7 @@ void MonteCarloTalude()
 			//std::ofstream file2(name2);
 			//OutPutPost(soly, file2);
 
-			vector<vector<double>> epsppost;
+			std::vector<std::vector<double>> epsppost;
 			material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
 			string name3 = "epsppost3";
 			string ext3 = ".txt";
@@ -1127,7 +1473,7 @@ void MonteCarloTalude()
 
 }
 
-vector<vector<double>>  IterativeSlopeStability(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material)
+std::vector<std::vector<double>>  IterativeSlopeStability(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, MatDoub  hhatinho, elastoplastic2D< druckerprager > *  material)
 {
 
 
@@ -1135,7 +1481,7 @@ vector<vector<double>>  IterativeSlopeStability(vector<vector< vector<Doub > > >
 
 	Int ndivs = 1000;
 	MatDoub pathbottom, pathleft, pathright, pathdisplace;
-	vector<int>  idsbottom, idsleft, idsright, iddisplace;
+	std::vector<int>  idsbottom, idsleft, idsright, iddisplace;
 	VecDoub a(2), b(2);
 	a[0] = 0.;a[1] = 0.;
 	b[0] = 75.;b[1] = 0;
@@ -1174,8 +1520,8 @@ vector<vector<double>>  IterativeSlopeStability(vector<vector< vector<Doub > > >
 	//Doub l = 10., lamb = 1., lambn=0, lamb3, diff = 100;
 	Doub l =2., lamb = 1., lambn = 0, lamb3, diff = 100;
 	Int counterout = 0;
-	vector<double> solcount(2,0.);
-	vector<vector<double>> solpost;
+	std::vector<double> solcount(2,0.);
+	std::vector<std::vector<double>> solpost;
 	
 //	while (counterout < 15 && fabs(diff)>0.1)
 	while (counterout < 30 && fabs(diff)>1.e-3)
@@ -1301,7 +1647,7 @@ vector<vector<double>>  IterativeSlopeStability(vector<vector< vector<Doub > > >
 	OutPutFile(solpost23, file8);
 
 
-	vector<vector<double>> epsppost;
+	std::vector<std::vector<double>> epsppost;
 	material->PostProcessIntegrationPointVar(allcoords, meshtopology, material->fdisplace, epsppost);
 	string name3 = "epsppostphiiguala1";
 	string ext3 = ".txt";
@@ -1323,7 +1669,7 @@ void stochasticproblemtalude(MatDoub &HHAT)
 
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	//string  elsstr= "mesh-talude-els.txt";
 	//string nodestr = "mesh-talude-nodes.txt";
 	//string nodestr = "nodes-intermediario.txt";
@@ -1375,7 +1721,7 @@ void stochasticproblemtalude(MatDoub &HHAT)
 
 	for (Int iveccol = 0;iveccol < vec.ncols(); iveccol++)
 	{
-		vector<vector<double>> eigenfuncx;
+		std::vector<std::vector<double>> eigenfuncx;
 		string name = "eigenfunction";
 		string ext = ".txt";
 		auto s = std::to_string(iveccol);
@@ -1402,7 +1748,7 @@ void IterativeProcessPressure()
 {
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	string  elsstr = "elements-pressure-fino.txt";
 	string nodestr = "nodes-pressure-fino.txt";
 	ReadMesh(allcoords, meshcoords, meshtopology, elsstr, nodestr);
@@ -1422,7 +1768,7 @@ void IterativeProcessPressure()
 	MatDoub  bodyforce(2,1,0.);
 	Int ndivs = 10000;
 	MatDoub path1, path2, path3;
-	vector<int>  idpath1, idpath2, iddisplace;
+	std::vector<int>  idpath1, idpath2, iddisplace;
 	VecDoub a(2), b(2);
 	a[0] = 100.;a[1] = 0.;
 	b[0] = 200.;b[1] = 0;
@@ -1461,7 +1807,7 @@ void IterativeProcessPressure()
 
 
 	MatInt  linetopology;
-	vector<int> idpathcirc;
+	std::vector<int> idpathcirc;
 	MatDoub pathcirc;
 	ndivs = 1000;
 	Doub delta;
@@ -1477,7 +1823,7 @@ void IterativeProcessPressure()
 	gridmesh::FindIdsInPath(pathcirc, allcoords, meshtopology, idpathcirc);
 	//for (int i = 0;i < idpathcirc.size();i++)std::cout << " ID  = " << idpathcirc[i] << endl;
 
-	vector<vector<int>>  linetopol = LineTopology(idpathcirc, 2);
+	std::vector<std::vector<int>>  linetopol = LineTopology(idpathcirc, 2);
 	ToMatInt(linetopol, linetopology);
 	//linetopology.Print();
 	material->ContributeCurvedLine(KG, FG, meshcoords, linetopology, finalload);
@@ -1549,7 +1895,7 @@ void IterativeProcessPressure()
 
 	std::ofstream file8("loadvsdisplacementlu.txt");
 	OutPutFile(solpost, file8);
-	vector<vector<double>> solx, soly;
+	std::vector<std::vector<double>> solx, soly;
 	material->PostProcess(allcoords, meshtopology, displace, solx, soly);
 	std::ofstream file("soly.txt");
 	OutPutPost(soly, file);
@@ -1577,7 +1923,7 @@ void IterativeProcess()
 
 	MatDoub  meshcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	grid.CreateMesh(allcoords, meshcoords, meshtopology);
 
 	std::ofstream filemesh1("meshcoords.txt");
@@ -1595,7 +1941,7 @@ void IterativeProcess()
 
 	Int ndivs = 10000;
 	MatDoub path1, path2, path3,path4;
-	vector<int>  idpath1, idpath2, idpath3,iddisplace;
+	std::vector<int>  idpath1, idpath2, idpath3,iddisplace;
 	VecDoub a(2), b(2);
 	a[0] = L;a[1] = 0.;
 	b[0] = L;b[1] = h;
@@ -1709,7 +2055,7 @@ void IterativeProcess()
 	
 	std::ofstream file8("loadvsdisplacementlu.txt");
 	OutPutFile(solpost, file8);
-	vector<vector<double>> solx, soly;
+	std::vector<std::vector<double>> solx, soly;
 	material->PostProcess(allcoords, meshtopology, displace, solx, soly);
 	std::ofstream file("soly.txt");
 	OutPutPost(soly, file);
@@ -1727,7 +2073,7 @@ void stochasticproblem(MatDoub &HHAT, gridmesh & grid)
 
 	MatDoub  meshcoords, elcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	grid.CreateMesh(allcoords, meshcoords, meshtopology);
 
 	std::ofstream filemesh1("meshcoords.txt");
@@ -1765,7 +2111,7 @@ void stochasticproblem(MatDoub &HHAT, gridmesh & grid)
 	//autovetores nas colunas de vec
 	for (Int iveccol = 0;iveccol < vec.ncols(); iveccol++)
 	{
-		vector<vector<double>> eigenfuncx;
+		std::vector<std::vector<double>> eigenfuncx;
 		string name = "eigenfunction";
 		string ext = ".txt";
 		auto s = std::to_string(iveccol);
@@ -1789,7 +2135,7 @@ void MonteCarlo(MatDoub &HHAT, gridmesh & grid)
 	std::clock_t start;
 	double duration;
 
-	vector<vector< vector<Doub > > > allcoords;
+	std::vector<std::vector< std::vector<Doub > > > allcoords;
 	MatDoub  meshcoords;
 	MatInt meshtopology;
 	grid.GetData(allcoords, meshcoords, meshtopology);
@@ -1803,7 +2149,7 @@ void MonteCarlo(MatDoub &HHAT, gridmesh & grid)
 
 	Int ndivs = 10000;
 	MatDoub path1, path2, path3;
-	vector<int>  idpath1, idpath2, idpath3;
+	std::vector<int>  idpath1, idpath2, idpath3;
 	VecDoub a(2), b(2);
 	a[0] = L;a[1] = 0.;
 	b[0] = L;b[1] = h;
@@ -1829,7 +2175,7 @@ void MonteCarlo(MatDoub &HHAT, gridmesh & grid)
 	elastmat2D*  material = new elastmat2D(young, nu, thickness, bodyforce, planestress, order, hhatinho);
 
 	for (Int i = 0;i < HHAT.nrows();i++)hhatinho[i][0] = HHAT[i][3];
-	vector<vector<double>> hhat, hhat2;
+	std::vector<std::vector<double>> hhat, hhat2;
 	material->PostProcess(allcoords, meshtopology, hhatinho, hhat);
 	std::ofstream file("hhat.txt");
 	OutPutPost(hhat, file);
@@ -1900,7 +2246,7 @@ void MonteCarlo(MatDoub &HHAT, gridmesh & grid)
 			duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 			std::cout << " time to solve with (Cholesky) " << duration << '\n';
 
-			vector<vector<double>> hhatx;
+			std::vector<std::vector<double>> hhatx;
 			string name = "hhat";
 			string ext = ".txt";
 			auto s = std::to_string(imc);
@@ -1946,7 +2292,7 @@ Doub beamproblem(Int nx, Int ny, Int order)
 
 	MatDoub  meshcoords;
 	MatInt meshtopology;
-	vector<vector<vector<Doub>>> allcoords;
+	std::vector<std::vector<std::vector<Doub>>> allcoords;
 	grid.CreateMesh(allcoords, meshcoords, meshtopology);
 
 	Doub young = 3000., nu = 0.2, thickness = 1., bodyforce = 0.;
@@ -1959,7 +2305,7 @@ Doub beamproblem(Int nx, Int ny, Int order)
 
 	Int ndivs = 10000;
 	MatDoub path1, path2, path3;
-	vector<int>  idpath1, idpath2, idpath3;
+	std::vector<int>  idpath1, idpath2, idpath3;
 	VecDoub a(2), b(2);
 	a[0] = L;a[1] = 0.;
 	b[0] = L;b[1] = h;
@@ -2015,7 +2361,7 @@ Doub beamproblem(Int nx, Int ny, Int order)
 	chol->inverse(invKG);
 	invKG.Mult(FG, sol);
 	sol.Print();
-	vector<vector<double>> solx, soly;
+	std::vector<std::vector<double>> solx, soly;
 	material->PostProcess(allcoords, meshtopology, sol, solx, soly);
 	std::ofstream file("soly.txt");
 	OutPutPost(soly, file);
@@ -2093,7 +2439,7 @@ void OutPutFile4var(MatDoub & postdata, std::ofstream &file)
 }
 
 
-void OutPutPost(vector<vector<double>> & postdata, std::ofstream &file)
+void OutPutPost(std::vector<std::vector<double>> & postdata, std::ofstream &file)
 {
 	file.clear();
 	for (Int i = 0;i < postdata.size(); i++)
@@ -2134,9 +2480,9 @@ void OutPutPost(MatInt & postdata, std::ofstream &file)
 	file.close();
 }
 
-void ReadMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, string filenameel, string filenamecoord)
+void ReadMesh(std::vector<std::vector< std::vector<Doub > > > &allcoords, MatDoub & meshcoords, MatInt & meshtopology, string filenameel, string filenamecoord)
 {
-	std::vector<vector<Int>> topol;
+	std::vector<std::vector<Int>> topol;
 	string line,temp;
 
 	ifstream myfile(filenameel);
@@ -2145,11 +2491,11 @@ void ReadMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords,
 	{
 		while (getline(myfile, line))
 		{
-			vector<string> tokens;
+			std::vector<string> tokens;
 			istringstream iss(line);
 			while (iss >> temp)
 				tokens.push_back(temp);
-			vector<Int> input_int = vecstr_to_vecint(tokens);
+			std::vector<Int> input_int = vecstr_to_vecint(tokens);
 			for (int k = 0;k < input_int.size();k++)
 			{
 				input_int[k] = input_int[k]-1;
@@ -2163,20 +2509,20 @@ void ReadMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords,
 	meshtopology.CopyFromVector(topol);
 	//meshtopology.Print();
 
-	std::vector<vector<Doub>> coords;
+	std::vector<std::vector<Doub>> coords;
 	string line2, temp2;
 	ifstream myfile2(filenamecoord);
 	if (myfile2.is_open())
 	{
 		while (getline(myfile2, line2))
 		{
-			vector<string> tokens;
+			std::vector<string> tokens;
 			istringstream iss(line2);
 			while (iss >> temp2)
 				tokens.push_back(temp2);
-			vector<Doub> input_doub = vecstr_to_vecdoub(tokens);
+			std::vector<Doub> input_doub = vecstr_to_vecdoub(tokens);
 
-			//vector<Doub> input_doub2(input_doub.size() - 1);
+			//std::vector<Doub> input_doub2(input_doub.size() - 1);
 			//for (int k = 1;k < input_doub.size();k++)
 			//{
 			//	input_doub2[k] = input_doub[k];
@@ -2192,10 +2538,10 @@ void ReadMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords,
 	//meshcoords.Print();
 
 
-	vector<Doub> temp33(2);
+	std::vector<Doub> temp33(2);
 	for (Int i = 0; i < meshtopology.nrows();i++)
 	{
-		vector< vector<Doub> > temp22;
+		std::vector< std::vector<Doub> > temp22;
 		for (Int j = 0; j < meshtopology.ncols(); j++)
 		{
 			Int top = meshtopology[i][j];
@@ -2209,10 +2555,10 @@ void ReadMesh(vector<vector< vector<Doub > > > &allcoords, MatDoub & meshcoords,
 
 
 }
-vector<Int> vecstr_to_vecint(vector<string> vs)
+std::vector<Int> vecstr_to_vecint(std::vector<string> vs)
 {
-	vector<Int> ret;
-	for (vector<string>::iterator it = vs.begin()+1;it != vs.end();++it)
+	std::vector<Int> ret;
+	for (std::vector<string>::iterator it = vs.begin()+1;it != vs.end();++it)
 	{
 		istringstream iss(*it);
 		Int temp;
@@ -2222,10 +2568,23 @@ vector<Int> vecstr_to_vecint(vector<string> vs)
 	return ret;
 }
 
-vector<Doub> vecstr_to_vecdoub(vector<string> vs)
+std::vector<Doub> vecstr_to_vecdoub(std::vector<string> vs)
 {
-	vector<Doub> ret;
-	for (vector<string>::iterator it = vs.begin()+1;it != vs.end()-1;++it)
+	std::vector<Doub> ret;
+	for (std::vector<string>::iterator it = vs.begin()+1;it != vs.end()-1;++it)
+	{
+		istringstream iss(*it);
+		Doub temp;
+		iss >> temp;
+		ret.push_back(temp);
+	}
+	return ret;
+}
+
+std::vector<Doub> vecstr_to_vecdoub2(std::vector<string> vs)
+{
+	std::vector<Doub> ret;
+	for (std::vector<string>::iterator it = vs.begin() ;it != vs.end() ;++it)
 	{
 		istringstream iss(*it);
 		Doub temp;
@@ -2236,10 +2595,10 @@ vector<Doub> vecstr_to_vecdoub(vector<string> vs)
 }
 
 template <class T>
-vector<T> vecstr_to_vec(vector<string> vs)
+std::vector<T> vecstr_to_vec(std::vector<string> vs)
 {
-	vector<T> ret;
-	for (vector<string>::iterator it = vs.begin();it != vs.end();++it)
+	std::vector<T> ret;
+	for (std::vector<string>::iterator it = vs.begin();it != vs.end();++it)
 	{
 		istringstream iss(*it);
 		T temp;
@@ -2249,4 +2608,60 @@ vector<T> vecstr_to_vec(vector<string> vs)
 	return ret;
 }
 
+void ReadMatDoub(MatDoub & matdoub, std::string  file)
+{
+	std::vector<std::vector<Doub>> coords;
+	string line2, temp2;
+	ifstream myfile2(file);
+	if (myfile2.is_open())
+	{
+		while (getline(myfile2, line2))
+		{
+			std::vector<string> tokens;
+			istringstream iss(line2);
+			while (iss >> temp2)
+				tokens.push_back(temp2);
+			std::vector<Doub> input_doub = vecstr_to_vecdoub2(tokens);
+			coords.push_back(input_doub);
+		}
+		myfile2.close();
+	}
+	else cout << "Unable to open file";
+	//for (int i = 0;i < coords.size();i++)
+	//{
+	//	for (int j = 0;j < coords[0].size();j++)
+	//	{
+	//		cout << coords[i][j] << endl;
+	//	}
+	//	cout << endl;
+	//}
 
+	matdoub.CopyFromVector(coords);
+}
+
+
+//// REMEMBER to update "lu.hpp" header includes from boost-CVS
+//
+//
+///* Matrix inversion routine.
+//Uses lu_factorize and lu_substitute in uBLAS to invert a matrix */
+//bool InvertMatrix(const matrix<double>& input, matrix<double>& inverse) {
+//	using namespace boost::numeric::ublas;
+//	typedef permutation_matrix<std::size_t> pmatrix;
+//	// create a working copy of the input
+//	matrix<double> A(input);
+//	// create a permutation matrix for the LU-factorization
+//	pmatrix pm(A.size1());
+//
+//	// perform LU-factorization
+//	int res = lu_factorize(A, pm);
+//	if (res != 0) return false;
+//
+//	// create identity matrix of "inverse"
+//	inverse.assign(identity_matrix<double>(A.size1()));
+//
+//	// backsubstitute to get the inverse
+//	lu_substitute(A, pm, inverse);
+//
+//	return true;
+//}

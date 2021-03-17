@@ -1,7 +1,7 @@
 #include "elastmat2D.h"
 #include "gridmesh.h"
 
-
+using namespace std;
 elastmat2D::elastmat2D(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order) : shapequad(order, 1)
 {
 	fyoung = young;
@@ -33,7 +33,7 @@ elastmat2D::~elastmat2D()
 }
 
 
-void elastmat2D::Assemble(MatDoub &KG, MatDoub &FG, const vector<vector< vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
+void elastmat2D::Assemble(MatDoub &KG, MatDoub &FG, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
 {
 	MatDoub ek, ef, elcoords, eltopology;
 	GetElCoords(allcoords, 0, elcoords);
@@ -206,7 +206,7 @@ void elastmat2D::assembleConstitutiveMatrix(MatDoub &C, Doub mult)
 	C[2][0] = 0.;                    C[2][1] = 0.;                    C[2][2] = young / (2 * (1 + nu));
 }
 
-void elastmat2D::GetElCoords(vector<vector< vector<Doub > > > allcoords, Int el, MatDoub & elcoords)
+void elastmat2D::GetElCoords(std::vector<std::vector< std::vector<Doub > > > allcoords, Int el, MatDoub & elcoords)
 {
 
 	elcoords.assign(allcoords[el].size(), 2, 0.);
@@ -219,7 +219,7 @@ void elastmat2D::GetElCoords(vector<vector< vector<Doub > > > allcoords, Int el,
 	}
 }
 
-void elastmat2D::DirichletBC(MatDoub &KG, MatDoub & FG, vector<int> ids, Int  dir, Int val)
+void elastmat2D::DirichletBC(MatDoub &KG, MatDoub & FG, std::vector<int> ids, Int  dir, Int val)
 {
 	Int nodes = ids.size();
 	Int sz = KG.nrows();
@@ -252,7 +252,7 @@ void elastmat2D::DirichletBC(MatDoub &KG, MatDoub & FG, vector<int> ids, Int  di
 	}
 
 }
-void elastmat2D::ContributeLineNewan(MatDoub &KG, MatDoub & FG, vector<int> ids, Int  dir, Int val)
+void elastmat2D::ContributeLineNewan(MatDoub &KG, MatDoub & FG, std::vector<int> ids, Int  dir, Int val)
 {
 	MatDoub psis, gradpsis, ptsws;
 
@@ -272,7 +272,7 @@ void elastmat2D::ContributeLineNewan(MatDoub &KG, MatDoub & FG, vector<int> ids,
 
 }
 
-void elastmat2D::SolPt(const vector<vector< vector<Doub > > > &allcoords,
+void elastmat2D::SolPt(const std::vector<std::vector< std::vector<Doub > > > &allcoords,
 	const MatInt &meshtopology, const Int &el, const  MatDoub &solG, const Doub &xi, const Doub &eta, MatDoub &xycoords, MatDoub &sol)
 {
 
@@ -295,8 +295,8 @@ void elastmat2D::SolPt(const vector<vector< vector<Doub > > > &allcoords,
 
 
 
-void elastmat2D::PostProcess(const vector<vector< vector<Doub > > > &allcoords,
-	const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &solx, vector<vector<double>> &soly)
+void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > > > &allcoords,
+	const MatInt &meshtopology, const MatDoub & nodalsol, std::vector<std::vector<double>> &solx, std::vector<std::vector<double>> &soly)
 {
 
 	MatDoub elcoords, eltopology, psis, gradpsis, xycoords, psist;
@@ -311,7 +311,7 @@ void elastmat2D::PostProcess(const vector<vector< vector<Doub > > > &allcoords,
 		GetElCoords(allcoords, iel, elcoords);
 		for (Doub xi = -1.;xi < 1 - refine;xi += refine)
 		{
-			vector<double> sol(3);
+			std::vector<double> sol(3);
 			for (Doub eta = -1.; eta < 1 - refine;eta += refine)
 			{
 				Doub approx = 0., approy = 0.;
@@ -335,8 +335,8 @@ void elastmat2D::PostProcess(const vector<vector< vector<Doub > > > &allcoords,
 	}
 }
 
-void elastmat2D::PostProcess(const vector<vector< vector<Doub > > > &allcoords,
-	const MatInt &meshtopology, const MatDoub & nodalsol, vector<vector<double>> &sol)
+void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > > > &allcoords,
+	const MatInt &meshtopology, const MatDoub & nodalsol, std::vector<std::vector<double>> &sol)
 {
 
 	MatDoub elcoords, eltopology, psis, gradpsis, xycoords, psist;
@@ -351,7 +351,7 @@ void elastmat2D::PostProcess(const vector<vector< vector<Doub > > > &allcoords,
 		GetElCoords(allcoords, iel, elcoords);
 		for (Doub xi = -1.;xi < 1 - refine;xi += refine)
 		{
-			vector<double> soli(3);
+			std::vector<double> soli(3);
 			for (Doub eta = -1.; eta < 1 - refine;eta += refine)
 			{
 				Doub approx = 0., approy = 0.;
