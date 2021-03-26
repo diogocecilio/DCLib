@@ -27,10 +27,10 @@ struct LUdcmp
 			for (j = 0;j<n;j++)
 				if ((temp = abs(lu[i][j])) > big) big = temp;
 			if (fabs(big) < 10e-12) {
-				//fail = true; 
+				fail = true; 
 				cout << "Singular matrix in LUdcmp" << endl;
 				//globalfail = true;
-				//return;
+				return;
 			}
 			vv[i] = 1.0 / big;
 		}
@@ -63,7 +63,7 @@ struct LUdcmp
 	}
 	void solve(VecDoub_I &b, VecDoub_O &x)
 	{
-		///if (fail)return;
+		//if (fail)return;
 		Int i, ii = 0, ip, j;
 		Doub sum;
 		if (b.size() != n || x.size() != n)

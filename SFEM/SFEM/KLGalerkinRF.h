@@ -11,28 +11,29 @@
 #include "nr3.h"
 #include "elastmat2D.h"
 #include "cholesky.h"
-
+#include "mesh.h"
 
 class KLGalerkinRF : public elastmat2D, shapequad {
 public:
-	KLGalerkinRF(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order, Doub Lx, Doub Ly, Doub sig, Int type, Int samples, Int expansionorder);
+	KLGalerkinRF(mesh &inmesh, Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order, Doub Lx, Doub Ly, Doub sig, Int type, Int samples, Int expansionorder);
 	~KLGalerkinRF();
 
 	void ContributeB(MatDoub &BE, Doub xi, Doub eta, Doub w, MatDoub elcoords);
 	void CacStiffB(MatDoub &BE, const MatDoub  &elcoords);
-	void AssembleB(MatDoub &B, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology);
+	void AssembleB(MatDoub &B);
 
 	void ContributeC(MatDoub &CE, MatDoub psis1, MatDoub GradPsi1, MatDoub elcoords1, Doub w1, MatDoub psis2, MatDoub GradPsi2, MatDoub elcoords2, Doub w2);
 	void CacStiffC(MatDoub &CE, const MatDoub  &elcoords1, const MatDoub  &elcoords2);
-	void AssembleC(MatDoub &C, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology);
+	void AssembleC(MatDoub &C);
 
-	void SolveGenEigValProblem(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, NRmatrix<MatDoub> & HHAT);
+	void SolveGenEigValProblem(VecComplex & val, MatDoub & vec, NRmatrix<MatDoub> & HHAT, std::vector<std::vector<double>> &errpost);
 
 	Doub AutocorrelationFunc(MatDoub  x1, MatDoub  x2);
 
-	Doub PerfomIntegralOfListconst(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec);
+	Doub PerfomIntegralOfListconst( const MatDoub &Vec);
 
-	Doub PerfomIntegralOfListconst2(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec);
+	Doub PerfomIntegralOfListconst2(const MatDoub &Vec);
+
 
 	void ComputeVarianceError(VecComplex &val, MatDoub &vec, MatDoub &error);
 
@@ -63,5 +64,6 @@ private:
 	Int ftype;
 	Int fsamples;
 	Int fexpansionorder;
+	mesh fmesh;
 };
 

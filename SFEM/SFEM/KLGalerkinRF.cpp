@@ -4,7 +4,7 @@
 #include <chrono>
 #include <random>
 
-KLGalerkinRF::KLGalerkinRF(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order, Doub Lx, Doub Ly, Doub sig, Int type, Int samples, Int expansionorder) :elastmat2D(young, nu, thickness, bodyforce, planestress, order), shapequad(order, 1) {
+KLGalerkinRF::KLGalerkinRF(mesh &inmesh,Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order, Doub Lx, Doub Ly, Doub sig, Int type, Int samples, Int expansionorder) :elastmat2D(inmesh,young, nu, thickness, bodyforce, planestress, order), shapequad(order, 1) {
 	fyoung = young;
 	fnu = nu;
 	fbodyforce = bodyforce;
@@ -17,6 +17,8 @@ KLGalerkinRF::KLGalerkinRF(Doub young, Doub nu, Doub thickness, Doub bodyforce, 
 	ftype = type;
 	fsamples = samples;
 	fexpansionorder = expansionorder;
+	fmesh = inmesh;
+	//cout << "sz = " << fmesh.fallcoords[0].size() << endl;
 }
 
 
@@ -63,8 +65,12 @@ void KLGalerkinRF::CacStiffB(MatDoub &BE, const MatDoub  &elcoords)
 
 
 }
-void KLGalerkinRF::AssembleB(MatDoub &B, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
+void KLGalerkinRF::AssembleB(MatDoub &B)
 {
+	std::vector<std::vector< std::vector<Doub > > > allcoords = fmesh.GetAllCoords();
+	MatDoub meshnodes = fmesh.GetMeshNodes();
+	MatInt meshtopology = fmesh.GetMeshTopology();
+
 	MatDoub BE, elcoords, eltopology;
 	GetElCoords(allcoords, 0, elcoords);
 	Int rows = elcoords.nrows();
@@ -138,8 +144,12 @@ void KLGalerkinRF::CacStiffC(MatDoub &CE, const MatDoub  &elcoords1, const MatDo
 		}
 	}
 }
-void KLGalerkinRF::AssembleC(MatDoub &C, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
+void KLGalerkinRF::AssembleC(MatDoub &C)
 {
+	std::vector<std::vector< std::vector<Doub > > > allcoords = fmesh.GetAllCoords();
+	MatDoub meshnodes = fmesh.GetMeshNodes();
+	MatInt meshtopology = fmesh.GetMeshTopology();
+
 	MatDoub elcoords, elcoords1, elcoords2, CE;
 	Int rowglob, colglob;
 	Int nels = allcoords.size();
@@ -195,21 +205,23 @@ Doub KLGalerkinRF::AutocorrelationFunc(MatDoub  x1, MatDoub  x2)
 	return val;
 }
 
-void KLGalerkinRF::SolveGenEigValProblem(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology, VecComplex & val, MatDoub & vec, NRmatrix<MatDoub>  & HHAT)
+void KLGalerkinRF::SolveGenEigValProblem(VecComplex & val, MatDoub & vec, NRmatrix<MatDoub>  & HHAT, std::vector<std::vector<double>> &errpost)
 {
 	std::clock_t start;
 	double duration;
+	std::vector<std::vector< std::vector<Doub > > > allcoords = fmesh.GetAllCoords();
+	MatDoub meshnodes = fmesh.GetMeshNodes();
+	MatInt meshtopology = fmesh.GetMeshTopology();
 
-
-
+	//cout << "sz = " << allcoords[0].size() << endl;
 	/* Your algorithm here */
 
 
 	std::cout << "\n Assembling the correlation matrix (C) and the deformation matrix (B)" << endl;
 	start = std::clock();
 	MatDoub C, B, vect, internaleigenvectors;
-	AssembleC(C, allcoords, meshnodes, meshtopology);
-	AssembleB(B, allcoords, meshnodes, meshtopology);
+	AssembleC(C);
+	AssembleB(B);
 
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 
@@ -268,7 +280,7 @@ void KLGalerkinRF::SolveGenEigValProblem(const std::vector<std::vector< std::vec
 			vec[idegree][iexp] = internaleigenvectors[idegree][iexp];
 			vectocomputeintegral[idegree][0] = vec[idegree][iexp];
 		}
-		Doub integral2 = PerfomIntegralOfListconst(allcoords, meshtopology, vectocomputeintegral);
+		Doub integral2 = PerfomIntegralOfListconst(vectocomputeintegral);
 		vecint.push_back(integral2);
 
 	}
@@ -291,10 +303,10 @@ void KLGalerkinRF::SolveGenEigValProblem(const std::vector<std::vector< std::vec
 	MatDoub error;
 	ComputeVarianceError(val, vec, error);
 
-	std::vector<std::vector<double>> errpost;
-	PostProcess(allcoords, meshtopology, error, errpost);
-	std::ofstream file("VARERROOOO.txt");
-	OutPutPost(errpost, file);
+//	std::vector<std::vector<double>> errpost;
+	PostProcess( error, errpost);
+//	std::ofstream file("error.txt");
+//	OutPutPost(errpost, file);
 
 	vec.Transpose(vect);
 
@@ -343,8 +355,12 @@ void KLGalerkinRF::SolveGenEigValProblem(const std::vector<std::vector< std::vec
 
 }
 
-Doub KLGalerkinRF::PerfomIntegralOfListconst2(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec)
+Doub KLGalerkinRF::PerfomIntegralOfListconst2( const MatDoub &Vec)
 {
+	std::vector<std::vector< std::vector<Doub > > > allcoords = fmesh.GetAllCoords();
+	MatDoub meshnodes = fmesh.GetMeshNodes();
+	MatInt meshtopology = fmesh.GetMeshTopology();
+
 	MatDoub xycoords1, xycoords2, sol1, sol2;
 	Doub delta = 0.05, sum = 0., solmean, dx, dy, solu, xi, eta;
 	Int nels = allcoords.size(), iel;
@@ -354,8 +370,8 @@ Doub KLGalerkinRF::PerfomIntegralOfListconst2(const std::vector<std::vector< std
 		{
 			for (eta = -1.;eta < 1. - delta;eta += delta)
 			{
-				SolPt(allcoords, meshtopology, iel, Vec, xi, eta, xycoords1, sol1);
-				SolPt(allcoords, meshtopology, iel, Vec, xi + delta, eta + delta, xycoords2, sol2);
+				SolPt( iel, Vec, xi, eta, xycoords1, sol1);
+				SolPt(iel, Vec, xi + delta, eta + delta, xycoords2, sol2);
 				solmean = (sol1[0][0] * sol1[0][0] + sol2[0][0] * sol2[0][0])*0.5;
 				dx = xycoords1[0][0] - xycoords2[0][0];
 				dy = xycoords1[0][1] - xycoords2[0][1];
@@ -370,6 +386,7 @@ Doub KLGalerkinRF::PerfomIntegralOfListconst2(const std::vector<std::vector< std
 	return solu;
 }
 
+//Compute the nodal error 
 void KLGalerkinRF::ComputeVarianceError(VecComplex &val, MatDoub &vec, MatDoub &error)
 {
 	//err2 = (sig ^ 2 - (Sum[val[[i]] vec[[i]] ^ 2, { i, 1, Length[val] }]));
@@ -384,14 +401,20 @@ void KLGalerkinRF::ComputeVarianceError(VecComplex &val, MatDoub &vec, MatDoub &
 			error[j][0] += fabs(val[i].real())*pow(vec[j][i], 2);
 		}
 	}
-	sig -= error;
-	error = sig;
+	error *= 1 / (fsig*fsig);
+	//sig -= error;
+	//error = sig;
+
 
 }
 
 
-Doub KLGalerkinRF::PerfomIntegralOfListconst(const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatInt meshtopology, const MatDoub &Vec)
+Doub KLGalerkinRF::PerfomIntegralOfListconst( const MatDoub &Vec)
 {
+	std::vector<std::vector< std::vector<Doub > > > allcoords = fmesh.GetAllCoords();
+	MatDoub meshnodes = fmesh.GetMeshNodes();
+	MatInt meshtopology = fmesh.GetMeshTopology();
+
 	MatDoub xycoords1, xycoords2, sol1, sol2, intrule, psis, elcoords, GradPsi, Jac;
 	Doub  sum = 0., solu, xi, eta, w;
 	shapequad::pointsandweigths(intrule);
