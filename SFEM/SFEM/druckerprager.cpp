@@ -57,7 +57,7 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 		Doub xitrial = I1 / sqrt(3.);
 		MatDoub pt, vec, vect;
 		Doub rhotrial = sqrt(2. * J2);
-		if (fabs(J2)<1.e-3)
+		if (fabs(J2)<1.e-3 )
 		{
 			//cout << " fail true " << endl;
 			//cout << " J2 " << J2 << endl;
@@ -113,6 +113,7 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 				lu->inverse(invQ);
 				//}
 				if (lu->fail)
+				//if (chol->fail)
 				{
 					cout << " LU fail true " << endl;
 					projstress = stresstrialtensor;
@@ -123,13 +124,15 @@ void druckerprager::closestpointproj(TensorDoub epst, TensorDoub epsp, TensorDou
 					Dep[1][0] = Dept[1][0];Dep[1][1] = Dept[1][1];Dep[1][2] = Dept[1][5];
 					Dep[2][0] = Dept[5][0];Dep[2][1] = Dept[5][1];Dep[2][2] = Dept[5][5];
 					projgamma = 0.;
+				//	delete chol;
+					delete lu;
 					return;
 				}
 				else {
 
-
-
 					delete lu;
+
+					//delete chol;
 
 					invQ.Mult(C, R);
 					Dept = R;

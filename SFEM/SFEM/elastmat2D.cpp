@@ -2,7 +2,7 @@
 #include "gridmesh.h"
 
 using namespace std;
-elastmat2D::elastmat2D(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order) : shapequad(order, 1)
+elastmat2D::elastmat2D(mesh &inmesh, Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order) : shapequad(order, 1)
 {
 	fyoung = young;
 	fnu = nu;
@@ -10,6 +10,7 @@ elastmat2D::elastmat2D(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int 
 	fplanestress = planestress;
 	fthickness = thickness;
 	fOrder = order;
+	fmesh = inmesh;
 }
 
 elastmat2D::elastmat2D(Doub young, Doub nu, Doub thickness, Doub bodyforce, Int planestress, Int order, MatDoub  HHAT) : shapequad(order, 1)
@@ -36,7 +37,7 @@ elastmat2D::~elastmat2D()
 void elastmat2D::Assemble(MatDoub &KG, MatDoub &FG, const std::vector<std::vector< std::vector<Doub > > > &allcoords, const MatDoub &meshnodes, const MatInt meshtopology)
 {
 	MatDoub ek, ef, elcoords, eltopology;
-	GetElCoords(allcoords, 0, elcoords);
+	GetElCoords(fmesh.GetAllCoords(), 0, elcoords);
 	Int rows = elcoords.nrows();
 	Int sz = 2 * meshnodes.nrows();
 	Int cols = rows;
@@ -57,7 +58,7 @@ void elastmat2D::Assemble(MatDoub &KG, MatDoub &FG, const std::vector<std::vecto
 			}
 		}
 
-		GetElCoords(allcoords, iel, elcoords);
+		GetElCoords(fmesh.GetAllCoords(), iel, elcoords);
 		CacStiff(ek, ef, elcoords);
 		for (Int irow = 0;irow < rows;irow++)
 		{
@@ -206,7 +207,7 @@ void elastmat2D::assembleConstitutiveMatrix(MatDoub &C, Doub mult)
 	C[2][0] = 0.;                    C[2][1] = 0.;                    C[2][2] = young / (2 * (1 + nu));
 }
 
-void elastmat2D::GetElCoords(std::vector<std::vector< std::vector<Doub > > > allcoords, Int el, MatDoub & elcoords)
+void elastmat2D::GetElCoords(std::vector<std::vector< std::vector<Doub > > > &allcoords, Int el, MatDoub & elcoords)
 {
 
 	elcoords.assign(allcoords[el].size(), 2, 0.);
@@ -272,12 +273,11 @@ void elastmat2D::ContributeLineNewan(MatDoub &KG, MatDoub & FG, std::vector<int>
 
 }
 
-void elastmat2D::SolPt(const std::vector<std::vector< std::vector<Doub > > > &allcoords,
-	const MatInt &meshtopology, const Int &el, const  MatDoub &solG, const Doub &xi, const Doub &eta, MatDoub &xycoords, MatDoub &sol)
+void elastmat2D::SolPt( const Int &el, const  MatDoub &solG, const Doub &xi, const Doub &eta, MatDoub &xycoords, MatDoub &sol)
 {
 
 	MatDoub psis, GradPsi, elcoords, psist, solel;
-	GetElCoords(allcoords, el, elcoords);
+	GetElCoords(fmesh.GetAllCoords(), el, elcoords);
 	shapes(psis, GradPsi, xi, eta);
 	Int nodes = psis.nrows();
 	Int nstatevars = 1;
@@ -287,7 +287,7 @@ void elastmat2D::SolPt(const std::vector<std::vector< std::vector<Doub > > > &al
 
 	for (Int inode = 0; inode < nodes;inode++)
 	{
-		solel[inode][0] = solG[meshtopology[el][inode]][0];
+		solel[inode][0] = solG[fmesh.GetMeshTopology()[el][inode]][0];
 	}
 	psist.Mult(solel, sol);
 
@@ -295,20 +295,19 @@ void elastmat2D::SolPt(const std::vector<std::vector< std::vector<Doub > > > &al
 
 
 
-void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > > > &allcoords,
-	const MatInt &meshtopology, const MatDoub & nodalsol, std::vector<std::vector<double>> &solx, std::vector<std::vector<double>> &soly)
+void elastmat2D::PostProcess( const MatDoub & nodalsol, std::vector<std::vector<double>> &solx, std::vector<std::vector<double>> &soly)
 {
 
 	MatDoub elcoords, eltopology, psis, gradpsis, xycoords, psist;
-	GetElCoords(allcoords, 0, elcoords);
+	GetElCoords(fmesh.GetAllCoords(), 0, elcoords);
 	Int rows = elcoords.nrows();
 	Int cols = rows;
-	Int nels = allcoords.size();
+	Int nels = fmesh.GetAllCoords().size();
 	Doub refine = 0.1;
 
 	for (Int iel = 0;iel < nels;iel++)
 	{
-		GetElCoords(allcoords, iel, elcoords);
+		GetElCoords(fmesh.GetAllCoords(), iel, elcoords);
 		for (Doub xi = -1.;xi < 1 - refine;xi += refine)
 		{
 			std::vector<double> sol(3);
@@ -322,8 +321,8 @@ void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > >
 				sol[1] = xycoords[0][1];
 				for (Int inode = 0;inode < elcoords.nrows();inode++)
 				{
-					approx += psis[inode][0] * nodalsol[meshtopology[iel][inode] * 2][0];
-					approy += psis[inode][0] * nodalsol[meshtopology[iel][inode] * 2 + 1][0];
+					approx += psis[inode][0] * nodalsol[fmesh.GetMeshTopology()[iel][inode] * 2][0];
+					approy += psis[inode][0] * nodalsol[fmesh.GetMeshTopology()[iel][inode] * 2 + 1][0];
 				}
 				sol[2] = approx;
 				solx.push_back(sol);
@@ -335,20 +334,19 @@ void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > >
 	}
 }
 
-void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > > > &allcoords,
-	const MatInt &meshtopology, const MatDoub & nodalsol, std::vector<std::vector<double>> &sol)
+void elastmat2D::PostProcess( const MatDoub & nodalsol, std::vector<std::vector<double>> &sol)
 {
 
 	MatDoub elcoords, eltopology, psis, gradpsis, xycoords, psist;
-	GetElCoords(allcoords, 0, elcoords);
+	GetElCoords(fmesh.GetAllCoords(), 0, elcoords);
 	Int rows = elcoords.nrows();
 	Int cols = rows;
-	Int nels = allcoords.size();
+	Int nels = fmesh.GetAllCoords().size();
 	Doub refine = 0.05;
 
 	for (Int iel = 0;iel < nels;iel++)
 	{
-		GetElCoords(allcoords, iel, elcoords);
+		GetElCoords(fmesh.GetAllCoords(), iel, elcoords);
 		for (Doub xi = -1.;xi < 1 - refine;xi += refine)
 		{
 			std::vector<double> soli(3);
@@ -362,7 +360,7 @@ void elastmat2D::PostProcess(const std::vector<std::vector< std::vector<Doub > >
 				soli[1] = xycoords[0][1];
 				for (Int inode = 0;inode < elcoords.nrows();inode++)
 				{
-					approx += psis[inode][0] * nodalsol[meshtopology[iel][inode]][0];
+					approx += psis[inode][0] * nodalsol[fmesh.GetMeshTopology()[iel][inode]][0];
 				}
 				soli[2] = approx;
 				sol.push_back(soli);
