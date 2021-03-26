@@ -14,8 +14,8 @@ struct Cholesky {
 				for (sum = el[i][j], k = i - 1;k >= 0;k--) sum -= el[i][k] * el[j][k];
 				if (i == j) {
 					if (sum <= 0.0) {
-						fail = true;
-						//cout << " \n negative sum in Cholesky, exiting and trying LU...." << endl;
+						//fail = true;
+					//	cout << " \n negative sum in Cholesky, exiting and trying LU...." << endl;
 						//return;
 						//globalfail = true;
 						throw("Cholesky failed");
